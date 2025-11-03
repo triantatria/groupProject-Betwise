@@ -1,0 +1,25 @@
+<section class="blackjack">
+    <h2>Blackjack</h2>
+
+    <div class="row">
+        <label>Bet:
+            <input id="bj-bet" type="number" min="1" step="1" value="10">
+        </label>
+        <button id="bj-deal">Deal</button>
+        <button id="bj-hit" disabled>Hit</button>
+        <button id="bj-stand" disabled>Stand</button>
+    </div>
+
+    <div class="row">
+        <div>
+            <strong>Dealer</strong>
+            <ul id="bj-dealer" class="cards"></ul>
+        </div>
+        <div>
+            <strong>You</strong>
+            <ul id="bj-player" class="cards"></ul>
+        </div>
+    </div>
+
+    <p id="bj-status">Place a bet and begin!</p>
+</section>
