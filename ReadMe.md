@@ -16,13 +16,23 @@ Players create an account and receive a virtual wallet with credits to play imme
 - Individuals who want the thrill without financial loss or debt.
 
 ### Installation and Setup
-(insert instructions on how to run BetWise locally once we have this)
+- Must have Docker installed to run this application
+- (insert instructions on how to run BetWise locally once we have this)
 
 ### Future Improvements
 - Add multiplayer modes.
 - Implement user profiles with progress tracking across multiple games.
 - Introduce AI-based tutoring for strategic learning in Blackjack.
 - Increase scalablity so games can also be played on mobile devices.
+
+### Tech Stack
+- Frontend: 
+- Backend: Node.js, Express
+- Database: PostgreSQL
+- Authentification:
+- Styling: CSS
+- Containerization: Docker and Docker Compose
+  
 
 ### Team
 - Connor Edelheit - triantatria - coed8882@colorado.edu
