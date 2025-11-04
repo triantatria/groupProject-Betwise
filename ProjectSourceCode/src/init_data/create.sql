@@ -1,8 +1,10 @@
 -- Create Users table, stores usernames, passwords, and user ids of users
+-- Also stores time of when user account was created
+-- Hash password for privacy
 CREATE TABLE IF NOT EXISTS users (
   user_id BIGSERIAL PRIMARY KEY,
   username VARCHAR(30) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,             -- bcrypt/argon2 hash
+  password_hash TEXT NOT NULL,             -- bcrypt hash
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
