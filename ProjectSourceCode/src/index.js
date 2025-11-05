@@ -74,10 +74,10 @@ app.use(
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 // TODO - Include your API routes here
-/*app.get("/", async (req, res) =>{
+app.get("/", async (req, res) =>{
     res.render('pages/login');
 })
-
+/*
 app.get("/login", async (req, res) =>{
   res.render('pages/login');
 })
