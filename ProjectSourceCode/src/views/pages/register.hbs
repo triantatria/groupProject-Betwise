@@ -1,20 +1,37 @@
-<div class="container mt-5">
-  <div class="row justify-content-center">
-    <div class="col-md-4">
-      <h3 class="text-center mb-3">Register</h3>
-      <form <!--action="/register" method="POST"--> >
-        <div class="mb-3">
-          <label for="username" class="form-label">Username</label>
-          <input type="text" class="form-control" id="username" name="username" required>
-        </div>
-        <div class="mb-3">
-          <label for="password" class="form-label">Password</label>
-          <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Register</button>
-      </form>
-       <p>Already have an account? <a  href="/">Login</a></p>
-       <!--{{> message}} -->
-    </div>
+<div class="bg-layer neon-clouds"></div>
+<div class="bg-layer caustics"></div>
+<div class="bg-layer particles"></div>
+<div class="bg-layer glow-ripple"></div>
+<div class="bg-layer bloom-overlay"></div>
+<div class="bg-layer neon-dots"></div>
+
+<div class="center-stage login-entry">
+  <h1 class="logo-title stay">BETWISE</h1>
+  <p class="bw-slogan stay">Flow With The Odds</p>
+
+  <div class="login-center">
+    {{#if error}}
+      <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">{{message}}</div>
+    {{/if}}
+
+    <form class="register-form" action="/register" method="post">
+      <div class="input-group">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" placeholder="Enter your username" required />
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Enter your password" required />
+      </div>
+
+      <button type="submit" class="enter-button">Register</button>
+    </form>
+
+    <p class="login-footer-text">
+      Have an account? <a href="/login">Login</a>
+    </p>
   </div>
 </div>
+
+<div id="page-transition" class="page-transition"></div>
