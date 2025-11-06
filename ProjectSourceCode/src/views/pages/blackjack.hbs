@@ -1,25 +1,52 @@
-<section class="blackjack">
-    <h2>Blackjack</h2>
+<div class="bg-layer neon-clouds dim"></div>
+<div class="bg-layer caustics softer"></div>
+<div class="bg-layer bloom-overlay subtle"></div>
+<div class="bg-layer neon-dots"></div>
 
-    <div class="row">
-        <label>Bet:
-            <input id="bj-bet" type="number" min="1" step="1" value="10">
-        </label>
-        <button id="bj-deal">Deal</button>
-        <button id="bj-hit" disabled>Hit</button>
-        <button id="bj-stand" disabled>Stand</button>
+<nav class="nav-full glass-subtle">
+  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
+  <div class="nav-links">
+    <a href="#" class="nav-item">Profile</a>
+    <a href="#" class="nav-item">Leaderboard</a>
+    <a href="#" class="nav-item wallet">Wallet ▾</a>
+  </div>
+</nav>
+
+<main class="blackjack-container fade-in">
+
+  <div class="bj-side">
+    <section class="bj-panel dealer-zone glass-card">
+      <h2 class="bj-label">Dealer</h2>
+      <div class="bj-cards" id="dealerCards"></div>
+      <div class="bj-score" id="dealerScore">Score: —</div>
+    </section>
+
+    <section class="bj-panel player-zone glass-card">
+      <h2 class="bj-label">You</h2>
+      <div class="bj-cards" id="playerCards"></div>
+      <div class="bj-score" id="playerScore">Score: —</div>
+    </section>
+  </div>
+
+  <aside class="bj-main-controls glass-card">
+    <div class="bet-inline">
+      <label for="bjBet">Bet:</label>
+      <input type="number" placeholder="0.00" class="bet-input" id="bjBet" min="0" step="1">
     </div>
 
-    <div class="row">
-        <div>
-            <strong>Dealer</strong>
-            <ul id="bj-dealer" class="cards"></ul>
-        </div>
-        <div>
-            <strong>You</strong>
-            <ul id="bj-player" class="cards"></ul>
-        </div>
+    <button class="play-btn" id="bjDealBtn">DEAL</button>
+
+    <div class="bj-actions" id="bjActionButtons">
+      <button class="play-btn secondary" id="bjHitBtn">Hit</button>
+      <button class="play-btn secondary" id="bjStandBtn">Stand</button>
+      <button class="play-btn secondary" id="bjDoubleBtn">Double</button>
     </div>
 
-    <p id="bj-status">Place a bet and begin!</p>
-</section>
+    <div class="bj-result" id="bjResultText"></div>
+  </aside>
+
+</main>
+
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>
