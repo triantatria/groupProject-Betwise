@@ -1,5 +1,5 @@
 {
-  "name": "groupProject-Betwise",
+  "name": "groupproject-betwise",
   "main": "src/index.js",
   "dependencies": {
     "express": "^4.6.1",
