@@ -31,6 +31,11 @@ app.get('/', (req, res) => {
   res.render('pages/login', { title: 'Login', pageClass: 'login-page' });
 });
 
+app.get('/register', (req, res) => {
+    if (req.session.user) return res.redirect('/home');
+    res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
+  });
+
 // HANDLE LOGIN //
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
