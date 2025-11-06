@@ -1,40 +1,38 @@
-<section class="Mines">
-    <h2>Mines</h2>
+<div class="bg-layer neon-clouds dim"></div>
+<div class="bg-layer caustics softer"></div>
+<div class="bg-layer bloom-overlay subtle"></div>
+<div class="bg-layer neon-dots"></div>
 
-    <!-- Credits -->
-    <div class="row">
-        <label for="m-bet">Credits to bet:</label>
-        <input id="m-bet" name="bet" type="number" min="1" step="1" value="5">
+<nav class="nav-full glass-subtle">
+  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
+  <div class="nav-links">
+    <a href="#" class="nav-item">Profile</a>
+    <a href="#" class="nav-item">Leaderboard</a>
+    <a href="#" class="nav-item wallet">Wallet ▾</a>
+  </div>
+</nav>
+
+<main class="mines-container fade-in">
+  <div class="mines-side glass-card">
+    <h2 class="mines-title">MINES</h2>
+
+    <div class="bet-panel">
+      <label>Bet Amount</label>
+      <input type="number" placeholder="0.00" class="bet-input" />
+
+      <label>Number of Mines</label>
+      <input type="number" min="1" max="15" value="3" class="bet-input" />
+
+      <button class="play-btn wide" id="startMinesBtn">Start Game</button>
+      <button class="cashout-btn hidden" id="cashoutBtn">Cashout</button>
     </div>
+  </div>
 
-    <!-- number of mines -->
-    <form id="m-form" class="row">
-        <label for="m-mines">Mines:</label>
-        <input id="m-mines" name="mines" type="number" min="1" max="15" step="1" value="5">
-        <button type="submit" id="m-start" >Start</button>
-    </form>
+  <div class="mines-grid glass-card">
+    <div id="minesGrid"></div>
+  </div>
+</main>
 
-    <!-- 4x4 -->
-    <div id="m-grid" class="grid-4x4">
-        <button class="cell" data-i="0"></button>
-        <button class="cell" data-i="1"></button>
-        <button class="cell" data-i="2"></button>
-        <button class="cell" data-i="3"></button>
-
-        <button class="cell" data-i="4"></button>
-        <button class="cell" data-i="5"></button>
-        <button class="cell" data-i="6"></button>
-        <button class="cell" data-i="7"></button>
-
-        <button class="cell" data-i="8"></button>
-        <button class="cell" data-i="9"></button>
-        <button class="cell" data-i="10"></button>
-        <button class="cell" data-i="11"></button>
-
-        <button class="cell" data-i="12"></button>
-        <button class="cell" data-i="13"></button>
-        <button class="cell" data-i="14"></button>
-        <button class="cell" data-i="15"></button>
-    </div>
-    <p id="m-status">Set mines and press Start to begin!</p>
-</section>
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>
