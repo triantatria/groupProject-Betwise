@@ -1,10 +1,22 @@
+// ================= SETUP ==================
 const express = require('express');
 const app = express();
 const handlebars = require('express-handlebars');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const bcrypt = require('bcryptjs');
+const pgp = require('pg-promise')();
 
+const db = pgp({
+  host: 'db',
+  port: 5432,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD
+});
+
+// ================= HANDLEBARS ==================
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: path.join(__dirname, 'views/layouts'),
@@ -15,49 +27,82 @@ const hbs = handlebars.create({
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
+
 app.use('/resources', express.static(path.join(__dirname, 'resources')));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'dev_secret_key', saveUninitialized: false, resave: false }));
+app.use(express.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'dev_secret_key',
+    saveUninitialized: false,
+    resave: false,
+  })
+);
 
-// auth middleware
+// ================= AUTH MIDDLEWARE ==================
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.redirect('/');
   next();
 }
 
-// LOGIN PAGE //
+// ================= LOGIN VIEW ==================
 app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-  res.render('pages/login', { title: 'Login', pageClass: 'login-page' });
+  res.status(302).render('pages/login', { title: 'Login', pageClass: 'login-page' });
 });
 
 app.get('/register', (req, res) => {
-    if (req.session.user) return res.redirect('/home');
-    res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
-  });
-
-// HANDLE LOGIN //
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === 'googlygambler' && password === 'googlygambler') {
-    req.session.user = { username };
-    return res.redirect('/transition');
-  }
-  res.render('pages/login', {
-    title: 'Login',
-    pageClass: 'login-page',
-    error: true,
-    message: 'Invalid username or password. Try "gamble" / "gamble".'
-  });
+  if (req.session.user) return res.redirect('/home');
+  res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
 });
 
-// TRANSITION PAGE //
-app.get('/transition', (req, res) => {
-  if (!req.session.user) return res.redirect('/');
+// ================= REGISTER API (USED IN TESTS) ==================
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ message: 'Invalid input' });
+  }
+
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await db.none(
+      `INSERT INTO users (username, password)
+       VALUES ($1, $2)`,
+      [username, hash]
+    );
+    res.redirect('/');
+    return res.status(200).json({ message: 'Success' });
+  } catch (err) {
+    return res.status(400).json({ message: 'User already exists' });
+  }
+});
+
+// ================= LOGIN API ==================
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await db.oneOrNone('SELECT * FROM users WHERE username=$1', [username]);
+  if (!user) {
+    return res.status(400).render('pages/login', { error: true, message: 'Invalid credentials' });
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) {
+    return res.status(400).render('pages/login', { error: true, message: 'Invalid credentials' });
+  }
+
+  req.session.user = { username };
+  res.status(200);
+  req.session.save(() => res.redirect('/home'));
+});
+
+// ================= TRANSITION ==================
+app.get('/transition', requireAuth, (req, res) => {
   res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
 });
 
-// HOME PAGE //
+// ================= HOME ==================
 app.get('/home', requireAuth, (req, res) => {
   res.render('pages/home', {
     title: 'Play',
@@ -66,37 +111,37 @@ app.get('/home', requireAuth, (req, res) => {
   });
 });
 
-// GAME ROUTES //
-app.get('/blackjack', (req, res) => {
+// ================= GAME ROUTES ==================
+app.get('/blackjack', requireAuth, (req, res) => {
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
     pageClass: 'home-page ultra-ink blackjack-page'
   });
 });
 
-app.get('/slots', (req, res) => {
+app.get('/slots', requireAuth, (req, res) => {
   res.render('pages/slots', {
     title: 'Betwise — Slots',
     pageClass: 'home-page ultra-ink slots-page'
   });
 });
 
-app.get('/mines', (req, res) => {
+app.get('/mines', requireAuth, (req, res) => {
   res.render('pages/mines', {
     title: 'Betwise — Mines',
     pageClass: 'home-page ultra-ink mines-page'
   });
 });
 
-
-// LOGOUT //
+// ================= LOGOUT ==================
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
-module.exports = app.listen(3000);
-
-// LAB 10 SAMPLE ROUTE //
+// ================= TEST ROUTE ==================
 app.get('/welcome', (req, res) => {
-  res.json({status: 'success', message: 'Welcome!'});
+  res.json({ status: 'success', message: 'Welcome!' });
 });
+
+// ================= EXPORT SERVER FOR TESTS ==================
+module.exports = app.listen(3000);
