@@ -1,3 +1,4 @@
+// ================= SETUP ==================
 const express = require('express');
 const app = express();
 const handlebars = require('express-handlebars');
@@ -11,13 +12,14 @@ const { Pool } = require('pg'); // PostgreSQL client
 // Database connection setup
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
-  host: 'localhost',
+  host: process.env.POSTGRES_HOST || 'localhost',
   database: process.env.POSTGRES_DB,
   password: process.env.POSTGRES_PASSWORD,
   port: 5432,
 });
 
 
+// Handlebars setup
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: path.join(__dirname, 'views/layouts'),
@@ -28,11 +30,19 @@ const hbs = handlebars.create({
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
+
 app.use('/resources', express.static(path.join(__dirname, 'resources')));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'dev_secret_key', saveUninitialized: false, resave: false }));
+app.use(express.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'dev_secret_key',
+    saveUninitialized: false,
+    resave: false,
+  })
+);
 
-// auth middleware
+// ================= AUTH MIDDLEWARE ==================
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.redirect('/');
   next();
@@ -45,10 +55,13 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  if (req.session.user) return res.redirect('/home');
-  res.render('pages/login', { title: 'Login', pageClass: 'login-page' });
+  if (req.session.user) {
+    return res.redirect('/home');   // logged in → go to home
+  }
+  return res.redirect('/login');    // not logged in → redirect to /login
 });
 
+// REGISTER PAGE //
 app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
   res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
@@ -56,28 +69,65 @@ app.get('/register', (req, res) => {
 
 // HANDLE REGISTRATION 
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-  const cleanUsername = username ? username.trim() : '';
-  console.log('REGISTER BODY:', req.body); // DEBUG
+  let { username, password } = req.body;
+  // ---------- INPUT VALIDATION (NEGATIVE TEST) ----------
+  // Make sure they are strings first
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      error: true,
+      message: 'Invalid input.'
+    });
+  }
+
+  const cleanUsername = username.trim();
+  password = password.trim();
+
+  // Check for empty fields
+  if (!username || !password) {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      error: true,
+      message: 'Invalid input.'
+    });
+  }
   try {
     // 1) Check if username already exists 
     const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [cleanUsername]);
     console.log('REGISTER existing.rowCount:', existing.rowCount); // DEBUG
     if (existing.rowCount > 0) {
+      //Negative test JSON request
+      if (req.is('application/json')) {
+        return res.status(400).json({ message: 'Invalid input' });
+      }
       return res.render('pages/register', {
         title: 'Register',
         pageClass: 'register-page',
         error: true,
         message: 'Registration failed. Username already taken.'
       });
-    } 
+    }
     const hashedPassword = bcrypt.hashSync(password, 10);
     console.log('REGISTER hashedPassword:', hashedPassword); // DEBUG
     const result = await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username',
-      [username, hashedPassword]);
+      [cleanUsername, hashedPassword]);
     //req.session.user = { id: result.rows[0].user_id, username: result.rows[0].username };
     console.log('REGISTER inserted user:', result.rows[0]); // DEBUG
-    res.redirect('/transition');
+    // Positive test + browser: always send 302 with Location + JSON body
+    // If this is the test (JSON), send 302 + JSON body
+    if (req.is('application/json')) {
+      return res.status(302).json({ message: 'Success' });
+    }
+    // Normal browser form submit → redirect to transition page
+    return res.redirect(302, '/transition');
   } catch (err) {
     console.error(err);
     res.render('pages/register', {
@@ -90,13 +140,13 @@ app.post('/register', async (req, res) => {
 });
 // HANDLE LOGIN 
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body; 
+  const { username, password } = req.body;
   const cleanUsername = username ? username.trim() : '';
 
   console.log('LOGIN BODY:', req.body); // DEBUG
   try {
     // 1) Fetch user by username 
-    const result = await pool.query('SELECT user_id, username, password_hash FROM users WHERE username = $1', [username]);
+    const result = await pool.query('SELECT user_id, username, password_hash FROM users WHERE username = $1', [cleanUsername]);
     console.log('LOGIN DB RESULT:', result.rows); // DEBUG
     // 2) If user not found 
     if (result.rowCount === 0) {
@@ -112,7 +162,7 @@ app.post('/login', async (req, res) => {
     const user = result.rows[0];
     const isMatch = bcrypt.compareSync(password, user.password_hash);
     console.log('LOGIN isMatch:', isMatch); // DEBUG
-   
+
     // If password does not match 
     if (!isMatch) {
       console.log('LOGIN: password mismatch'); // DEBUG
@@ -122,8 +172,9 @@ app.post('/login', async (req, res) => {
         error: true,
         message: 'Invalid username or password.'
       });
-    } // 4) Successful login 
-    req.session.user = { id: user.user_id, username: user.username , password: user.password_hash };
+    }
+    // 4) Successful login 
+    req.session.user = { id: user.user_id, username: user.username };
     res.redirect('/transition');
   } catch (err) {
     console.error(err);
@@ -142,7 +193,7 @@ app.get('/transition', (req, res) => {
   res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
 });
 
-// HOME PAGE //
+// ================= HOME ==================
 app.get('/home', requireAuth, (req, res) => {
   res.render('pages/home', {
     title: 'Play',
@@ -151,50 +202,39 @@ app.get('/home', requireAuth, (req, res) => {
   });
 });
 
-// GAME ROUTES //
-app.get('/blackjack', (req, res) => {
+// ================= GAME ROUTES ==================
+app.get('/blackjack', requireAuth, (req, res) => {
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
     pageClass: 'home-page ultra-ink blackjack-page'
   });
 });
 
-app.get('/slots', (req, res) => {
+app.get('/slots', requireAuth, (req, res) => {
   res.render('pages/slots', {
     title: 'Betwise — Slots',
     pageClass: 'home-page ultra-ink slots-page'
   });
 });
 
-app.get('/mines', (req, res) => {
+app.get('/mines', requireAuth, (req, res) => {
   res.render('pages/mines', {
     title: 'Betwise — Mines',
     pageClass: 'home-page ultra-ink mines-page'
   });
 });
 
-
-// LOGOUT //
+// ================= LOGOUT ==================
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
-// DEV ONLY: inspect users in the database
-app.get('/dev/users', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT user_id, username, password_hash FROM users'
-    );
-    console.log('DEV /dev/users:', result.rows); // DEBUG
-    res.json(result.rows);
-  } catch (err) {
-    console.error('DEV /dev/users ERROR:', err);
-    res.status(500).send('Error fetching users');
-  }
+
+
+// ================= TEST ROUTE ==================
+app.get('/welcome', (req, res) => {
+  res.json({ status: 'success', message: 'Welcome!' });
 });
 
-
-
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// ================= EXPORT SERVER FOR TESTS ==================
+module.exports = app.listen(3000);
