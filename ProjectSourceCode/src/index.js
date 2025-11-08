@@ -51,7 +51,7 @@ function requireAuth(req, res, next) {
 // LOGIN PAGE //
 app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-  res.render('pages/login', { title: 'Login', pageClass: 'login-page' });
+  res.status(302).render('pages/login', { title: 'Login', pageClass: 'login-page' });
 });
 
 app.get('/', (req, res) => {
