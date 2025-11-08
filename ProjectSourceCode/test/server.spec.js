@@ -1,16 +1,16 @@
 // ********************** Initialize server **********************************
 const server = require('../src/index');
-const server = require('../src/index');
+
 
 // ********************** Import Libraries ***********************************
 const chai = require('chai');
-const chai = require('chai');
+
 const chaiHttp = require('chai-http');
 chai.should();
 chai.use(chaiHttp);
 
 const { expect, assert } = chai;
-const { expect, assert } = chai;
+
 
 // ===================== DEFAULT WELCOME TEST ==========================
 // ===================== DEFAULT WELCOME TEST ==========================
