@@ -5,21 +5,18 @@ const handlebars = require('express-handlebars');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const bcrypt = require('bcryptjs'); //  To hash passwords
-require('dotenv').config(); // Load environment variables
-const { Pool } = require('pg'); // PostgreSQL client
+const bcrypt = require('bcryptjs');
+const pgp = require('pg-promise')();
 
-// Database connection setup
-const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.POSTGRES_HOST || 'localhost',
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
+const db = pgp({
+  host: 'db',
   port: 5432,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD
 });
 
-
-// Handlebars setup
+// ================= HANDLEBARS ==================
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: path.join(__dirname, 'views/layouts'),
@@ -48,8 +45,8 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// LOGIN PAGE //
-app.get('/login', (req, res) => {
+// ================= LOGIN VIEW ==================
+app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/home');
   res.status(302).render('pages/login', { title: 'Login', pageClass: 'login-page' });
 });
@@ -67,129 +64,118 @@ app.get('/register', (req, res) => {
   res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
 });
 
-// HANDLE REGISTRATION 
-app.post('/register', async (req, res) => {
-  let { username, password } = req.body;
-  // ---------- INPUT VALIDATION (NEGATIVE TEST) ----------
-  // Make sure they are strings first
-  if (typeof username !== 'string' || typeof password !== 'string') {
-    if (req.is('application/json')) {
-      return res.status(400).json({ message: 'Invalid input' });
+// ================= REGISTER API (USED IN TESTS) ==================
+app.post("/register", async (req, res) =>{
+    const username = req.body.username;
+    const hash = await bcrypt.hash(req.body.password, 10);
+    
+    const query =  `INSERT INTO users (username, password)
+                    VALUES ($1, $2)
+                    RETURNING *`;
+    try{
+       const iUser = await db.one(query, [username, hash]);
+       res.status(200).redirect('/');
+    }catch(err){
+        console.log(err);
+        const errMessage = "Username already exists";
+        res.status(200).render("pages/register", {message: err, error: true});
     }
-    return res.status(400).render('pages/register', {
-      title: 'Register',
-      pageClass: 'register-page',
-      error: true,
-      message: 'Invalid input.'
-    });
-  }
-
-  const cleanUsername = username.trim();
-  password = password.trim();
-
-  // Check for empty fields
-  if (!username || !password) {
-    if (req.is('application/json')) {
-      return res.status(400).json({ message: 'Invalid input' });
-    }
-    return res.status(400).render('pages/register', {
-      title: 'Register',
-      pageClass: 'register-page',
-      error: true,
-      message: 'Invalid input.'
-    });
-  }
-  try {
-    // 1) Check if username already exists 
-    const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [cleanUsername]);
-    console.log('REGISTER existing.rowCount:', existing.rowCount); // DEBUG
-    if (existing.rowCount > 0) {
-      //Negative test JSON request
-      if (req.is('application/json')) {
+});
+/*app.post("/register", async (req, res) =>{
+    const username = req.body.username;
+    const password = req.body.password;
+    const hash = req.body.password;//await bcrypt.hash(req.body.password, 10);
+    
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
         return res.status(400).json({ message: 'Invalid input' });
       }
-      return res.render('pages/register', {
-        title: 'Register',
-        pageClass: 'register-page',
-        error: true,
-        message: 'Registration failed. Username already taken.'
-      });
+
+    const query =  `INSERT INTO users (username, password)
+                    VALUES ($1, $2)
+                    RETURNING *`;
+    try{
+       const iUser = await db.one(query, [username, hash]);
+       res.redirect('/');
+       res.status(200);
+    }catch(err){
+        console.log(err);
+        const errMessage = "Username already exists";
+        res.render("pages/register", {message: errMessage, error: true});
     }
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    console.log('REGISTER hashedPassword:', hashedPassword); // DEBUG
-    const result = await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username',
-      [cleanUsername, hashedPassword]);
-    //req.session.user = { id: result.rows[0].user_id, username: result.rows[0].username };
-    console.log('REGISTER inserted user:', result.rows[0]); // DEBUG
-    // Positive test + browser: always send 302 with Location + JSON body
-    // If this is the test (JSON), send 302 + JSON body
-    if (req.is('application/json')) {
-      return res.status(302).json({ message: 'Success' });
-    }
-    // Normal browser form submit → redirect to transition page
-    return res.redirect(302, '/transition');
-  } catch (err) {
-    console.error(err);
-    res.render('pages/register', {
-      title: 'Register',
-      pageClass: 'register-page',
-      error: true,
-      message: 'Registration failed. Username already taken.'
-    });
-  }
-});
-// HANDLE LOGIN 
-app.post('/login', async (req, res) => {
+});*/
+/*app.post('/register', async (req, res) => {
   const { username, password } = req.body;
-  const cleanUsername = username ? username.trim() : '';
 
-  console.log('LOGIN BODY:', req.body); // DEBUG
-  try {
-    // 1) Fetch user by username 
-    const result = await pool.query('SELECT user_id, username, password_hash FROM users WHERE username = $1', [cleanUsername]);
-    console.log('LOGIN DB RESULT:', result.rows); // DEBUG
-    // 2) If user not found 
-    if (result.rowCount === 0) {
-      console.log('LOGIN: user not found'); // DEBUG
-      return res.render('pages/login', {
-        title: 'Login',
-        pageClass: 'login-page',
-        error: true,
-        message: 'Invalid username or password.'
-      });
-    }
-    // 3) Compare password 
-    const user = result.rows[0];
-    const isMatch = bcrypt.compareSync(password, user.password_hash);
-    console.log('LOGIN isMatch:', isMatch); // DEBUG
-
-    // If password does not match 
-    if (!isMatch) {
-      console.log('LOGIN: password mismatch'); // DEBUG
-      return res.render('pages/login', {
-        title: 'Login',
-        pageClass: 'login-page',
-        error: true,
-        message: 'Invalid username or password.'
-      });
-    }
-    // 4) Successful login 
-    req.session.user = { id: user.user_id, username: user.username };
-    res.redirect('/transition');
-  } catch (err) {
-    console.error(err);
-    res.render('pages/login', {
-      title: 'Login',
-      pageClass: 'login-page',
-      error: true,
-      message: 'Invalid username or password. Please try again.'
-    });
+  if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ message: 'Invalid input' });
   }
-});
 
-// TRANSITION PAGE //
-app.get('/transition', (req, res) => {
-  if (!req.session.user) return res.redirect('/');
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await db.none(
+      `INSERT INTO users (username, password)
+       VALUES ($1, $2)`,
+      [username, hash]
+    );
+    res.redirect('/');
+    return res.status(200).json({ message: 'Success' });
+  } catch (err) {
+    return res.status(400).json({ message: 'User already exists' });
+  }
+});*/
+
+// ================= LOGIN API ==================
+app.post("/login", async (req, res) =>{
+    const username = req.body.username;
+    const password = req.body.password;
+    
+    const query =  `SELECT * FROM users 
+                    WHERE users.username = $1 `;
+    try{
+      const user = await db.oneOrNone(query, [username]);
+      
+      if(!user){
+        errMessage = "User does not exist";
+        res.status(400);
+        return res.render("pages/register", { message: errMessage, error: true });
+      }
+  
+      const match = await bcrypt.compare(req.body.password, user.password);
+      if(!match){
+        const errMessage = "Incorrect username or password.";
+        return res.render("pages/login", { message: errMessage, error: true });
+      }
+      req.session.user = user;
+      req.session.save(() => {
+        res.status(200);
+        res.redirect("/home");
+      });
+    }catch(err){
+      console.log(err);
+      const errMessage = "Something went wrong. Please try again.";
+      res.render("pages/login", { message: errMessage, error: true });
+    }
+  });
+/*app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await db.oneOrNone('SELECT * FROM users WHERE username=$1', [username]);
+  if (!user) {
+    return res.status(400).render('pages/login', { error: true, message: 'Invalid credentials' });
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) {
+    return res.status(400).render('pages/login', { error: true, message: 'Invalid credentials' });
+  }
+
+  req.session.user = { username };
+  res.status(200);
+  req.session.save(() => res.redirect('/home'));
+});*/
+
+// ================= TRANSITION ==================
+app.get('/transition', requireAuth, (req, res) => {
   res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
 });
 
@@ -228,8 +214,6 @@ app.get('/mines', requireAuth, (req, res) => {
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
-
-
 
 // ================= TEST ROUTE ==================
 app.get('/welcome', (req, res) => {
