@@ -1,11 +1,13 @@
 -- Create Users table, stores usernames, passwords, and user ids of users
 -- Also stores time of when user account was created
 -- Hash password for privacy
-CREATE TABLE users (
-  --id SERIAL PRIMARY KEY,
-  username VARCHAR(50) PRIMARY KEY,
-  password VARCHAR(60) NOT NULL
+CREATE TABLE IF NOT EXISTS users (
+    user_id      BIGSERIAL PRIMARY KEY,
+    username     VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 
 -- Create three Leaderboard table, stores best score and number of wins for all users each game
 -- Connected by foregin key user_id, references Users

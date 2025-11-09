@@ -5,18 +5,21 @@ const handlebars = require('express-handlebars');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const bcrypt = require('bcryptjs');
-const pgp = require('pg-promise')();
+const bcrypt = require('bcryptjs'); //  To hash passwords
+require('dotenv').config(); // Load environment variables
+const { Pool } = require('pg'); // PostgreSQL client
 
-const db = pgp({
-  host: 'db',
-  port: 5432,
-  database: process.env.POSTGRES_DB,
+// Database connection setup
+const pool = new Pool({
   user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD
+  host: process.env.POSTGRES_HOST || 'localhost',
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASSWORD,
+  port: 5432,
 });
 
-// ================= HANDLEBARS ==================
+
+// Handlebars setup
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: path.join(__dirname, 'views/layouts'),
@@ -45,60 +48,148 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ================= LOGIN VIEW ==================
-app.get('/', (req, res) => {
+// LOGIN PAGE //
+app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/home');
   res.status(302).render('pages/login', { title: 'Login', pageClass: 'login-page' });
 });
 
+app.get('/', (req, res) => {
+  if (req.session.user) {
+    return res.redirect('/home');   // logged in → go to home
+  }
+  return res.redirect('/login');    // not logged in → redirect to /login
+});
+
+// REGISTER PAGE //
 app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
   res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
 });
 
-// ================= REGISTER API (USED IN TESTS) ==================
+// HANDLE REGISTRATION 
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ message: 'Invalid input' });
+  let { username, password } = req.body;
+  // ---------- INPUT VALIDATION (NEGATIVE TEST) ----------
+  // Make sure they are strings first
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      error: true,
+      message: 'Invalid input.'
+    });
   }
 
+  const cleanUsername = username.trim();
+  password = password.trim();
+
+  // Check for empty fields
+  if (!username || !password) {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      error: true,
+      message: 'Invalid input.'
+    });
+  }
   try {
-    const hash = await bcrypt.hash(password, 10);
-    await db.none(
-      `INSERT INTO users (username, password)
-       VALUES ($1, $2)`,
-      [username, hash]
-    );
-    res.redirect('/');
-    return res.status(200).json({ message: 'Success' });
+    // 1) Check if username already exists 
+    const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [cleanUsername]);
+    console.log('REGISTER existing.rowCount:', existing.rowCount); // DEBUG
+    if (existing.rowCount > 0) {
+      //Negative test JSON request
+      if (req.is('application/json')) {
+        return res.status(400).json({ message: 'Invalid input' });
+      }
+      return res.render('pages/register', {
+        title: 'Register',
+        pageClass: 'register-page',
+        error: true,
+        message: 'Registration failed. Username already taken.'
+      });
+    }
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    console.log('REGISTER hashedPassword:', hashedPassword); // DEBUG
+    const result = await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username',
+      [cleanUsername, hashedPassword]);
+    //req.session.user = { id: result.rows[0].user_id, username: result.rows[0].username };
+    console.log('REGISTER inserted user:', result.rows[0]); // DEBUG
+    // Positive test + browser: always send 302 with Location + JSON body
+    // If this is the test (JSON), send 302 + JSON body
+    if (req.is('application/json')) {
+      return res.status(302).json({ message: 'Success' });
+    }
+    // Normal browser form submit → redirect to transition page
+    return res.redirect(302, '/transition');
   } catch (err) {
-    return res.status(400).json({ message: 'User already exists' });
+    console.error(err);
+    res.render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      error: true,
+      message: 'Registration failed. Username already taken.'
+    });
   }
 });
-
-// ================= LOGIN API ==================
+// HANDLE LOGIN 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+  const cleanUsername = username ? username.trim() : '';
 
-  const user = await db.oneOrNone('SELECT * FROM users WHERE username=$1', [username]);
-  if (!user) {
-    return res.status(400).render('pages/login', { error: true, message: 'Invalid credentials' });
+  console.log('LOGIN BODY:', req.body); // DEBUG
+  try {
+    // 1) Fetch user by username 
+    const result = await pool.query('SELECT user_id, username, password_hash FROM users WHERE username = $1', [cleanUsername]);
+    console.log('LOGIN DB RESULT:', result.rows); // DEBUG
+    // 2) If user not found 
+    if (result.rowCount === 0) {
+      console.log('LOGIN: user not found'); // DEBUG
+      return res.render('pages/login', {
+        title: 'Login',
+        pageClass: 'login-page',
+        error: true,
+        message: 'Invalid username or password.'
+      });
+    }
+    // 3) Compare password 
+    const user = result.rows[0];
+    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    console.log('LOGIN isMatch:', isMatch); // DEBUG
+
+    // If password does not match 
+    if (!isMatch) {
+      console.log('LOGIN: password mismatch'); // DEBUG
+      return res.render('pages/login', {
+        title: 'Login',
+        pageClass: 'login-page',
+        error: true,
+        message: 'Invalid username or password.'
+      });
+    }
+    // 4) Successful login 
+    req.session.user = { id: user.user_id, username: user.username };
+    res.redirect('/transition');
+  } catch (err) {
+    console.error(err);
+    res.render('pages/login', {
+      title: 'Login',
+      pageClass: 'login-page',
+      error: true,
+      message: 'Invalid username or password. Please try again.'
+    });
   }
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    return res.status(400).render('pages/login', { error: true, message: 'Invalid credentials' });
-  }
-
-  req.session.user = { username };
-  res.status(200);
-  req.session.save(() => res.redirect('/home'));
 });
 
-// ================= TRANSITION ==================
-app.get('/transition', requireAuth, (req, res) => {
+// TRANSITION PAGE //
+app.get('/transition', (req, res) => {
+  if (!req.session.user) return res.redirect('/');
   res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
 });
 
@@ -137,6 +228,8 @@ app.get('/mines', requireAuth, (req, res) => {
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
+
+
 
 // ================= TEST ROUTE ==================
 app.get('/welcome', (req, res) => {
