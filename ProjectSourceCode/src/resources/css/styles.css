@@ -601,3 +601,4 @@ body.fade-out { animation: fadeOut 2s ease forwards; }
 /* Home fade-in */
 .home-page { opacity: 0; animation: homeFadeIn 1.8s ease forwards; }
 @keyframes homeFadeIn { 0% { opacity: 0; transform: scale(1.02); } 100% { opacity: 1; transform: scale(1); } }
+
