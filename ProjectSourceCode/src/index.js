@@ -268,6 +268,27 @@ app.post('/api/slots/spin', (req, res) => {
   res.json({ reels, payout, balance });
 });
 
+// PROFILE PAGE (no authentication required for now)
+app.get('/profile', async (req, res) => {
+  try {
+    // Optional: fetch some dummy data or just hardcode
+    const userData = {
+      username: 'DemoUser',
+      email: 'demo@example.com',
+    };
+
+    res.render('pages/profile', {
+      title: 'Profile',
+      pageClass: 'profile-page',
+      user: userData, // pass dummy data so you can style page
+    });
+  } catch (err) {
+    console.error(err);
+    res.redirect('/home'); // fallback
+  }
+});
+
+
 
 
 // ================= TEST ROUTE ==================
