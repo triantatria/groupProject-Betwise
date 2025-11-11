@@ -1,0 +1,48 @@
+<div class="bg-layer neon-clouds"></div>
+<div class="bg-layer caustics"></div>
+<div class="bg-layer particles"></div>
+<div class="bg-layer glow-ripple"></div>
+<div class="bg-layer bloom-overlay"></div>
+<div class="bg-layer neon-dots"></div>
+
+<nav class="nav-full glass-subtle">
+  <div class="nav-logo big">BETWISE</div>
+  <div class="nav-links">
+    <a href="#" class="nav-item">Profile</a>
+    <a href="#" class="nav-item">Leaderboard</a>
+    <a href="#" class="nav-item wallet">Wallet ▾</a>
+  </div>
+</nav>
+<br>
+<div class="center-stage login-entry" 
+     style="min-height: calc(100vh - 100px); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 20px;">
+  <p class="bw-slogan stay" style="margin: 0 20px 2rem; font-size: 3rem; text-align: center;">
+    Your Profile
+  </p>
+
+  <div class="login-center" style="display: flex; flex-direction: column; gap: 2rem; width: 90%; max-width: 600px;">
+
+    <div class="profile-info" style="text-align: left; gap: 1rem; display: flex; flex-direction: column; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 12px;">
+      <p><strong>Username:</strong> {{user.username}}</p>
+      <p><strong>Full Name:</strong> {{user.name}}</p>
+      <p><strong>Email:</strong> {{user.email}}</p>
+      <p><strong>Account Created:</strong> {{user.createdAt}}</p>
+      <p><strong>Games Played:</strong> {{user.gamesPlayed}}</p>
+    </div>
+
+    <div class="profile-actions" style="margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+      <a href="/edit-profile" class="enter-button" style="text-align: center;">Edit Profile</a>
+      <form action="/logout" method="post" style="text-align: center;">
+        <button type="submit" class="enter-button">Log Out</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+
+<div id="page-transition" class="page-transition"></div>
+
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>
