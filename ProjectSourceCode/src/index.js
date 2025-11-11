@@ -224,10 +224,70 @@ app.get('/mines', requireAuth, (req, res) => {
   });
 });
 
-// ================= LOGOUT ==================
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/'));
+// ================= SLOTS API ==================
+app.post('/api/slots/spin', (req, res) => {
+  const { bet } = req.body;
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: 'Invalid bet amount.' });
+  }
+
+  // In your real app, you'd load the player's balance from DB/session
+  let balance = 1000; // temporary demo value
+
+  // Weighted symbol list (more common ones appear more often)
+  const symbols = ['🍒','🍒','🍒','🍋','🍋','🍋','🍊','🍊','🍉','⭐','💎'];
+
+  // Spin 3 reels
+  const reels = Array.from({ length: 3 }, () => 
+    symbols[Math.floor(Math.random() * symbols.length)]
+  );
+
+  // Calculate payout
+  const [a, b, c] = reels;
+  let payout = 0;
+
+  // --- PAYOUT LOGIC ---
+  if (a === b && b === c) {
+    // 3 of a kind
+    if (a === '💎') payout = bet * 10;
+    else if (a === '🍒') payout = bet * 3;
+    else payout = bet * 2;
+  } 
+  else if (a === b || b === c || a === c) {
+    // 2 of a kind
+    payout = bet * 2;
+  } 
+  else {
+    // No match
+    payout = 0;
+  }
+
+  // Update balance
+  balance = balance - bet + payout;
+
+  res.json({ reels, payout, balance });
 });
+
+// PROFILE PAGE (no authentication required for now)
+app.get('/profile', async (req, res) => {
+  try {
+    // Optional: fetch some dummy data or just hardcode
+    const userData = {
+      username: 'DemoUser',
+      email: 'demo@example.com',
+    };
+
+    res.render('pages/profile', {
+      title: 'Profile',
+      pageClass: 'profile-page',
+      user: userData, // pass dummy data so you can style page
+    });
+  } catch (err) {
+    console.error(err);
+    res.redirect('/home'); // fallback
+  }
+});
+
 
 
 
