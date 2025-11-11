@@ -1,0 +1,104 @@
+{{> head}}
+{{> header}}
+
+<main class="container my-5">
+    <h1 class="mb-4 text-center">Leaderboards</h1>
+
+    <!-- Blackjack -->
+    <section class="mb-5">
+        <h2 class="mb-3">Blackjack</h2>
+        <div class="card glass-subtle">
+            <div class="card-body">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Wins</th>
+                            <th>Best Score</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each blackjack}}
+                        <tr>
+                            <td>{{inc @index}}</td> {{!-- or just use @index if you don’t have an inc helper --}}
+                            <td>{{username}}</td>
+                            <td>{{wins}}</td>
+                            <td>{{best_score}}</td>
+                            <td>{{updated_at}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mines -->
+    <section class="mb-5">
+        <h2 class="mb-3">Mines</h2>
+        <div class="card glass-subtle">
+            <div class="card-body">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Wins</th>
+                            <th>Best Score</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each mines}}
+                        <tr>
+                            <td>{{inc @index}}</td>
+                            <td>{{username}}</td>
+                            <td>{{wins}}</td>
+                            <td>{{best_score}}</td>
+                            <td>{{updated_at}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slots -->
+    <section class="mb-5">
+        <h2 class="mb-3">Slots</h2>
+        <div class="card glass-subtle">
+            <div class="card-body">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Wins</th>
+                            <th>Best Score</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each slots}}
+                        <tr>
+                            <td>{{inc @index}}</td>
+                            <td>{{username}}</td>
+                            <td>{{wins}}</td>
+                            <td>{{best_score}}</td>
+                            <td>{{updated_at}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+
+{{> footer}}
+</body>
+
+</html>
