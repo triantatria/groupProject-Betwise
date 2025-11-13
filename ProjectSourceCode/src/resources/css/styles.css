@@ -333,6 +333,12 @@ body {
   background: #ff006aaa; border-color: #ff33bbaa; box-shadow: 0 0 20px #ff0088aa;
 }
 
+.mine-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  filter: grayscale(100%);
+}
+
 .hidden { display: none; }
 
 /* BLACKJACK PAGE */

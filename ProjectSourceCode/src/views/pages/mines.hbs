@@ -1,10 +1,12 @@
-<div class="bg-layer neon-clouds dim"></div>
-<div class="bg-layer caustics softer"></div>
-<div class="bg-layer bloom-overlay subtle"></div>
-<div class="bg-layer neon-dots"></div>
+{{!-- Background layers --}}
+{{#each backgroundLayers}}
+  <div class="bg-layer {{this}}"></div>
+{{/each}}
 
 <nav class="nav-full glass-subtle">
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
+  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">
+    {{siteName}}
+  </div>
   <div class="nav-links">
     <a href="#" class="nav-item">Profile</a>
     <a href="#" class="nav-item">Leaderboard</a>

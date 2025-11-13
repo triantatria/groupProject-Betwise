@@ -1,14 +1,16 @@
-<div class="bg-layer neon-clouds dim"></div>
-<div class="bg-layer caustics softer"></div>
-<div class="bg-layer bloom-overlay subtle"></div>
-<div class="bg-layer neon-dots"></div>
+{{!-- Background layers --}}
+{{#each backgroundLayers}}
+  <div class="bg-layer {{this}}"></div>
+{{/each}}
 
 <nav class="nav-full glass-subtle">
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
+  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">
+    {{siteName}}
+  </div>
   <div class="nav-links">
-      <a href="#" class="nav-item">Profile</a>
-      <a href="#" class="nav-item">Leaderboard</a>
-      <a href="#" class="nav-item wallet">Wallet ▾</a>
+    <a href="#" class="nav-item">Profile</a>
+    <a href="#" class="nav-item">Leaderboard</a>
+    <a href="#" class="nav-item wallet">Wallet ▾</a>
   </div>
 </nav>
 
@@ -28,7 +30,9 @@
         <input type="number" id="slotBet" class="bet-input" placeholder="0.00">
       </div>
 
-      <button class="slot-spin-btn mono-neon" id="slotSpin">SPIN</button>
+      <button class="slot-spin-btn mono-neon" id="slotSpin">
+        SPIN
+      </button>
     </div>
 
     <div class="slot-result" id="slotResult"></div>

@@ -28,7 +28,23 @@ function requireAuth(req, res, next) {
 // LOGIN PAGE //
 app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-  res.render('pages/login', { title: 'Login', pageClass: 'login-page' });
+
+  const backgroundLayers = [
+    "neon-clouds",
+    "caustics",
+    "particles",
+    "glow-ripple",
+    "bloom-overlay",
+    "neon-dots"
+  ];
+
+  res.render('pages/login', {
+    title: 'Login',
+    pageClass: 'login-page',
+    backgroundLayers,
+    titleText: 'BETWISE',
+    subtitleText: 'Flow With The Odds'
+  });
 });
 
 // HANDLE LOGIN //
@@ -47,42 +63,111 @@ app.post('/login', (req, res) => {
 });
 
 // TRANSITION PAGE //
-app.get('/transition', (req, res) => {
-  if (!req.session.user) return res.redirect('/');
-  res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
-});
+app.get('/transition', requireAuth, (req, res) => {
 
-// HOME PAGE //
-app.get('/home', requireAuth, (req, res) => {
-  res.render('pages/home', {
-    title: 'Play',
-    pageClass: 'home-page ultra-ink',
+  const backgroundLayers = [
+    "neon-clouds",
+    "caustics",
+    "bloom-overlay",
+    "neon-dots"
+  ];
+
+  res.render('pages/transition', {
+    title: 'Preparing…',
+    pageClass: 'transition-page',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    titleText: 'BETWISE',
+    subtitleText: 'Preparing your experience...',
     user: req.session.user
   });
 });
 
+// HOME PAGE //
+app.get('/home', requireAuth, (req, res) => {
+  const games = [
+    {
+      name: "Slots",
+      description: "Spin the reels and test your luck!",
+      tag: "Classic",
+      route: "/slots"
+    },
+    {
+      name: "Blackjack",
+      description: "Beat the dealer and hit 21.",
+      tag: "Card Game",
+      route: "/blackjack"
+    },
+    {
+      name: "Mines",
+      description: "Choose wisely and avoid the bombs!",
+      tag: "Strategy",
+      route: "/mines"
+    }
+  ];
+
+  res.render('pages/home', {
+    title: 'Play',
+    pageClass: 'home-page ultra-ink',
+    user: req.session.user,
+    games
+  });
+});
+
 // GAME ROUTES //
-app.get('/blackjack', (req, res) => {
+app.get('/blackjack', requireAuth, (req, res) => {
+
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
-    pageClass: 'home-page ultra-ink blackjack-page'
+    pageClass: 'blackjack-page ultra-ink',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    user: req.session.user
   });
 });
 
-app.get('/slots', (req, res) => {
+app.get('/slots', requireAuth, (req, res) => {
+
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
   res.render('pages/slots', {
     title: 'Betwise — Slots',
-    pageClass: 'home-page ultra-ink slots-page'
+    pageClass: 'slots-page ultra-ink',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    user: req.session.user
   });
 });
 
-app.get('/mines', (req, res) => {
+app.get('/mines', requireAuth, (req, res) => {
+
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
   res.render('pages/mines', {
     title: 'Betwise — Mines',
-    pageClass: 'home-page ultra-ink mines-page'
+    pageClass: 'mines-page ultra-ink',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    user: req.session.user
   });
 });
-
 
 // LOGOUT //
 app.get('/logout', (req, res) => {
