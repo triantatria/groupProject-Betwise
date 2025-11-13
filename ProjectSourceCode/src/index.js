@@ -228,5 +228,13 @@ app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
+// ================= START SERVER & EXPORT FOR TESTS ==================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+// Start server and log a clickable link
+const server = app.listen(PORT, () => {
+  console.log(`Betwise server running at http://localhost:${PORT}`);
+});
+
+// Export the server instance for tests (chai-http, etc.)
+module.exports = server;
