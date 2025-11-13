@@ -32,6 +32,7 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use('/resources', express.static(path.join(__dirname, 'resources')));
+app.use('/resources', express.static(path.join(__dirname, '..', 'resources')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
@@ -51,7 +52,22 @@ function requireAuth(req, res, next) {
 // LOGIN PAGE //
 app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-  res.status(302).render('pages/login', { title: 'Login', pageClass: 'login-page' });
+    const backgroundLayers = [
+    "neon-clouds",
+    "caustics",
+    "particles",
+    "glow-ripple",
+    "bloom-overlay",
+    "neon-dots"
+  ];
+
+  res.render('pages/login', {
+    title: 'Login',
+    pageClass: 'login-page',
+    backgroundLayers,
+    titleText: 'BETWISE',
+    subtitleText: 'Flow With The Odds'
+  });
 });
 
 app.get('/', (req, res) => {
@@ -188,39 +204,162 @@ app.post('/login', async (req, res) => {
 });
 
 // TRANSITION PAGE //
-app.get('/transition', (req, res) => {
-  if (!req.session.user) return res.redirect('/');
-  res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
-});
+app.get('/transition', requireAuth, (req, res) => {
 
-// ================= HOME ==================
-app.get('/home', requireAuth, (req, res) => {
-  res.render('pages/home', {
-    title: 'Play',
-    pageClass: 'home-page ultra-ink',
+  const backgroundLayers = [
+    "neon-clouds",
+    "caustics",
+    "bloom-overlay",
+    "neon-dots"
+  ];
+
+  res.render('pages/transition', {
+    title: 'Preparing…',
+    pageClass: 'transition-page',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    titleText: 'BETWISE',
+    subtitleText: 'Preparing your experience...',
     user: req.session.user
   });
 });
 
-// ================= GAME ROUTES ==================
+// ================= HOME ==================
+app.get('/home', requireAuth, (req, res) => {
+  const games = [
+    {
+      name: "Slots",
+      description: "Spin the reels and test your luck!",
+      tag: "Classic",
+      route: "/slots"
+    },
+    {
+      name: "Blackjack",
+      description: "Beat the dealer and hit 21.",
+      tag: "Card Game",
+      route: "/blackjack"
+    },
+    {
+      name: "Mines",
+      description: "Choose wisely and avoid the bombs!",
+      tag: "Strategy",
+      route: "/mines"
+    }
+  ];
+
+  res.render('pages/home', {
+    title: 'Play',
+    pageClass: 'home-page ultra-ink',
+    user: req.session.user,
+    games
+  });
+});
+
+// GAME ROUTES //
 app.get('/blackjack', requireAuth, (req, res) => {
+
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
-    pageClass: 'home-page ultra-ink blackjack-page'
+    pageClass: 'blackjack-page ultra-ink',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    user: req.session.user
   });
 });
 
 app.get('/slots', requireAuth, (req, res) => {
+
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
+  // initialize balance if it doesn't exist
+  if (req.session.user.balance == null) {
+    req.session.user.balance = 1000;
+  }
+
   res.render('pages/slots', {
     title: 'Betwise — Slots',
-    pageClass: 'home-page ultra-ink slots-page'
+    pageClass: 'slots-page ultra-ink',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    user: req.session.user,
+    balance: req.session.user.balance
   });
 });
 
+app.post('/slots/spin', requireAuth, (req, res) => {
+  const bet = Number(req.body.bet);
+
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: "Invalid bet amount." });
+  }
+
+  // initialize balance if needed
+  if (req.session.user.balance == null) {
+    req.session.user.balance = 1000;
+  }
+
+  if (bet > req.session.user.balance) {
+    return res.status(400).json({ error: "Insufficient balance." });
+  }
+
+  const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
+
+  // randomly pick 3 symbols
+  const reels = [
+    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
+  ];
+
+  const [a, b, c] = reels;
+  let payout = 0;
+
+  if (a === b && b === c) {
+    if (a === '💎') payout = bet * 10;
+    else if (a === '🍒') payout = bet * 3;
+    else payout = bet * 2;
+  } else if (a === b || b === c || a === c) {
+    payout = bet * 2;
+  }
+
+  // update backend balance
+  req.session.user.balance = req.session.user.balance - bet + payout;
+
+  res.json({
+    reels,
+    payout,
+    newBalance: req.session.user.balance
+  });
+});
+
+
 app.get('/mines', requireAuth, (req, res) => {
+
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
   res.render('pages/mines', {
     title: 'Betwise — Mines',
-    pageClass: 'home-page ultra-ink mines-page'
+    pageClass: 'mines-page ultra-ink',
+    siteName: 'BETWISE',
+    backgroundLayers,
+    user: req.session.user
   });
 });
 
@@ -249,4 +388,3 @@ const server = app.listen(PORT, () => {
 
 // Export the server instance for tests (chai-http, etc.)
 module.exports = server;
-
