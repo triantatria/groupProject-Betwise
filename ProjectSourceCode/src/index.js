@@ -288,7 +288,9 @@ app.get('/profile', async (req, res) => {
   }
 });
 
-
+app.get('/leaderboard', async (req, res) => {
+  res.render('pages/leaderboard');
+})
 
 
 // ================= TEST ROUTE ==================
