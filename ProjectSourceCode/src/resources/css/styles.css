@@ -507,6 +507,100 @@ body {
 /* Slots animation */
 .reel.spin { animation: reelScroll .25s linear infinite; }
 
+/* Centering utility */
+.center-text {
+  text-align: center;
+  margin: 0 auto;
+}
+
+/* --- SLOT RULES CARD CONTAINER (Glass panel) --- */
+.slot-rules-card {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  padding: 10px;
+  border-radius: 10px;
+  width: fit-content;
+  max-width: 700px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.25),
+    0 0 25px rgba(0, 255, 255, 0.15),
+    0 4px 25px rgba(0, 0, 0, 0.35);
+
+  margin-bottom: 4px;   /* tighten spacing under the card */
+}
+
+/* --- RESET DEFAULT <details> MARGINS --- */
+.slot-rules {
+  margin: 0;
+  padding: 0;
+}
+
+/* --- SUMMARY --- */
+.rules-summary {
+  font-family: 'Audiowide', monospace;
+  font-size: 16px;
+  color: rgb(222, 238, 243);
+  cursor: pointer;
+  user-select: none;
+  text-shadow: 0 0 10px #0ff;
+  transition: all 0.2s ease;
+  outline: none;
+  background: none;
+  border: none;
+  padding: 0; /* default when closed */
+}
+
+/* --- SUMMARY STYLING: CLOSED --- */
+details:not([open]) .rules-summary {
+  padding: 2px 6px;                 /* very small padding */
+  background: none;                 /* no box */
+  border: none;
+}
+
+/* --- SUMMARY STYLING: OPEN --- */
+details[open] .rules-summary {
+  padding: 6px 12px;
+  border: 1px solid rgba(0,255,255,0.35);
+  background: rgba(0,255,255,0.18);
+  border-radius: 8px;
+}
+
+/* --- HOVER --- */
+.rules-summary:hover {
+  text-shadow: 0 0 6px #0ff;
+  color: #8ff;
+}
+
+/* --- RULES CONTENT --- */
+.rules-content p,
+.rules-content td,
+.rules-content th {
+  color: #e8f7ff;
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.35);
+  font-family: 'Inter', monospace;
+}
+
+/* --- TABLE STYLING --- */
+.rules-table {
+  margin: 0 auto;
+  text-align: center;
+  border-collapse: separate;
+  border-spacing: 12px 6px;     /* smaller table spacing */
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.rules-table th,
+.rules-table td {
+  padding: 4px 10px;
+}
+
 @keyframes reelScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
 
 /* LOGIN PAGE */
