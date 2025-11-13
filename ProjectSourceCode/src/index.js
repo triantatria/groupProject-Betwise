@@ -236,5 +236,17 @@ app.get('/welcome', (req, res) => {
   res.json({ status: 'success', message: 'Welcome!' });
 });
 
-// ================= EXPORT SERVER FOR TESTS ==================
-module.exports = app.listen(3000);
+
+
+
+// ================= START SERVER & EXPORT FOR TESTS ==================
+const PORT = process.env.PORT || 3000;
+
+// Start server and log a clickable link
+const server = app.listen(PORT, () => {
+  console.log(`Betwise server running at http://localhost:${PORT}`);
+});
+
+// Export the server instance for tests (chai-http, etc.)
+module.exports = server;
+
