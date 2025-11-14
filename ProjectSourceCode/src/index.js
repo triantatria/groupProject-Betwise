@@ -235,6 +235,7 @@ app.get('/home', requireAuth, (req, res) => {
     title: 'Play',
     pageClass: 'home-page ultra-ink',
     user: req.session.user,
+    siteName: 'BETWISE',
     games
   });
 });
@@ -252,6 +253,7 @@ app.get('/blackjack', requireAuth, (req, res) => {
     title: 'Betwise — Blackjack',
     pageClass: 'blackjack-page ultra-ink',
     backgroundLayers,
+    siteName: 'BETWISE',
     user: req.session.user
   });
 });
@@ -271,6 +273,7 @@ app.get('/slots', requireAuth, (req, res) => {
     pageClass: 'slots-page ultra-ink',
     backgroundLayers,
     user: req.session.user,
+    siteName: 'BETWISE',
     balance: req.session.user.balance
   });
 });
@@ -326,6 +329,7 @@ app.get('/mines', requireAuth, (req, res) => {
     title: 'Betwise — Mines',
     pageClass: 'mines-page ultra-ink',
     backgroundLayers,
+    siteName: 'BETWISE',
     user: req.session.user
   });
 });
