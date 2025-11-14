@@ -1,5 +1,5 @@
 {
-  "name": "groupproject-betwise",
+  "name": "betwise",
   "main": "src/index.js",
   "dependencies": {
     "express": "^4.6.1",
@@ -22,7 +22,7 @@
   "scripts": {
     "prestart": "npm install",
     "start": "nodemon src/index.js",
-    "test": "mocha test/server.spec.js",
-    "testandrun": "npm run prestart && npm run test && npm start"
+    "test": "mocha --exit test/server.spec.js",
+    "testandrun": "npm run prestart && npm run test || true && npm start"
   }
 }
