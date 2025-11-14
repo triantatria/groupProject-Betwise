@@ -1,32 +1,79 @@
+// *****************************************************
+// <!-- Section 1 : Import Dependencies -->
+// *****************************************************
+
 const express = require('express');
 const app = express();
 const handlebars = require('express-handlebars');
+const Handlebars = require('handlebars');
 const path = require('path');
+const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
+// *****************************************************
+// <!-- Section 2 : Connect to DB -->
+// *****************************************************
 
 const hbs = handlebars.create({
   extname: 'hbs',
-  layoutsDir: path.join(__dirname, 'views/layouts'),
-  partialsDir: path.join(__dirname, 'views/partials'),
+  layoutsDir: __dirname + '/views/layouts',
+  partialsDir: __dirname + '/views/partials',
   defaultLayout: 'main',
 });
+
+const dbConfig = {
+  host: 'db',
+  port: 5432,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+};
+
+const db = pgp(dbConfig);
+
+db.connect()
+  .then(obj => {
+    console.log('Database connection successful');
+    obj.done();
+  })
+  .catch(error => {
+    console.log('ERROR:', error.message || error);
+  });
+
+// *****************************************************
+// <!-- Section 3 : App Settings -->
+// *****************************************************
 
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
+
 app.use('/resources', express.static(path.join(__dirname, 'resources')));
 app.use('/resources', express.static(path.join(__dirname, '..', 'resources')));
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'dev_secret_key', saveUninitialized: false, resave: false }));
 
-// auth middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'dev_secret_key',
+    saveUninitialized: false,
+    resave: false,
+  })
+);
+
+// Authentication middleware
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.redirect('/');
   next();
 }
 
-// LOGIN PAGE //
+// *****************************************************
+// <!-- Section 4 : Routes -->
+// *****************************************************
+
+// LOGIN PAGE
 app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/home');
 
@@ -48,24 +95,118 @@ app.get('/', (req, res) => {
   });
 });
 
-// HANDLE LOGIN //
-app.post('/login', (req, res) => {
+// LOGIN HANDLER – CHECKS DATABASE
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  if (username === 'googlygambler' && password === 'googlygambler') {
-    req.session.user = { username };
+
+  try {
+    const user = await db.oneOrNone(
+      "SELECT user_id, username, password_hash FROM users WHERE username = $1",
+      [username]
+    );
+
+    if (!user) {
+      return res.render('pages/login', {
+        error: true,
+        message: "Invalid username or password."
+      });
+    }
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      return res.render('pages/login', {
+        error: true,
+        message: "Invalid username or password."
+      });
+    }
+
+    req.session.user = {
+      user_id: user.user_id,
+      username: user.username
+    };
+
     return res.redirect('/transition');
+
+  } catch (err) {
+    console.error("Login error:", err);
+    res.render('pages/login', {
+      error: true,
+      message: "Something went wrong."
+    });
   }
-  res.render('pages/login', {
-    title: 'Login',
-    pageClass: 'login-page',
-    error: true,
-    message: 'Invalid username or password. Try "gamble" / "gamble".'
+});
+
+// REGISTER PAGE
+app.get('/register', (req, res) => {
+  if (req.session.user) return res.redirect('/home');
+
+  const backgroundLayers = [
+    "neon-clouds",
+    "caustics",
+    "particles",
+    "glow-ripple",
+    "bloom-overlay",
+    "neon-dots"
+  ];
+
+  res.render('pages/register', {
+    title: 'Register',
+    pageClass: 'register-page',
+    backgroundLayers
   });
 });
 
-// TRANSITION PAGE //
-app.get('/transition', requireAuth, (req, res) => {
+// REGISTER HANDLER – INSERT USER INTO DATABASE
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
 
+  if (!username || !password) {
+    return res.render('pages/register', {
+      error: true,
+      message: "All fields required."
+    });
+  }
+
+  try {
+    const existing = await db.oneOrNone(
+      "SELECT user_id FROM users WHERE username = $1",
+      [username]
+    );
+
+    if (existing) {
+      return res.render('pages/register', {
+        error: true,
+        message: "Username already taken."
+      });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const user = await db.one(
+      `INSERT INTO users (username, password_hash)
+       VALUES ($1, $2)
+       RETURNING user_id, username`,
+      [username, hashed]
+    );
+
+    req.session.user = {
+      user_id: user.user_id,
+      username: user.username
+    };
+
+    res.redirect('/transition');
+
+  } catch (err) {
+    console.error("Registration error:", err);
+    res.render('pages/register', {
+      error: true,
+      message: "Something went wrong."
+    });
+  }
+});
+
+// TRANSITION PAGE
+app.get('/transition', requireAuth, (req, res) => {
   const backgroundLayers = [
     "neon-clouds",
     "caustics",
@@ -78,33 +219,16 @@ app.get('/transition', requireAuth, (req, res) => {
     pageClass: 'transition-page',
     siteName: 'BETWISE',
     backgroundLayers,
-    titleText: 'BETWISE',
-    subtitleText: 'Preparing your experience...',
     user: req.session.user
   });
 });
 
-// HOME PAGE //
+// HOME PAGE
 app.get('/home', requireAuth, (req, res) => {
   const games = [
-    {
-      name: "Slots",
-      description: "Spin the reels and test your luck!",
-      tag: "Classic",
-      route: "/slots"
-    },
-    {
-      name: "Blackjack",
-      description: "Beat the dealer and hit 21.",
-      tag: "Card Game",
-      route: "/blackjack"
-    },
-    {
-      name: "Mines",
-      description: "Choose wisely and avoid the bombs!",
-      tag: "Strategy",
-      route: "/mines"
-    }
+    { name: "Slots", description: "Spin the reels and test your luck!", tag: "Classic", route: "/slots" },
+    { name: "Blackjack", description: "Beat the dealer and hit 21.", tag: "Card Game", route: "/blackjack" },
+    { name: "Mines", description: "Choose wisely and avoid the bombs!", tag: "Strategy", route: "/mines" }
   ];
 
   res.render('pages/home', {
@@ -115,9 +239,8 @@ app.get('/home', requireAuth, (req, res) => {
   });
 });
 
-// GAME ROUTES //
+// GAME ROUTES
 app.get('/blackjack', requireAuth, (req, res) => {
-
   const backgroundLayers = [
     "neon-clouds dim",
     "caustics softer",
@@ -128,14 +251,12 @@ app.get('/blackjack', requireAuth, (req, res) => {
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
     pageClass: 'blackjack-page ultra-ink',
-    siteName: 'BETWISE',
     backgroundLayers,
     user: req.session.user
   });
 });
 
 app.get('/slots', requireAuth, (req, res) => {
-
   const backgroundLayers = [
     "neon-clouds dim",
     "caustics softer",
@@ -143,15 +264,11 @@ app.get('/slots', requireAuth, (req, res) => {
     "neon-dots"
   ];
 
-  // initialize balance if it doesn't exist
-  if (req.session.user.balance == null) {
-    req.session.user.balance = 1000;
-  }
+  if (req.session.user.balance == null) req.session.user.balance = 1000;
 
   res.render('pages/slots', {
     title: 'Betwise — Slots',
     pageClass: 'slots-page ultra-ink',
-    siteName: 'BETWISE',
     backgroundLayers,
     user: req.session.user,
     balance: req.session.user.balance
@@ -165,18 +282,13 @@ app.post('/slots/spin', requireAuth, (req, res) => {
     return res.status(400).json({ error: "Invalid bet amount." });
   }
 
-  // initialize balance if needed
-  if (req.session.user.balance == null) {
-    req.session.user.balance = 1000;
-  }
-
+  if (req.session.user.balance == null) req.session.user.balance = 1000;
   if (bet > req.session.user.balance) {
     return res.status(400).json({ error: "Insufficient balance." });
   }
 
   const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
 
-  // randomly pick 3 symbols
   const reels = [
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
@@ -187,14 +299,11 @@ app.post('/slots/spin', requireAuth, (req, res) => {
   let payout = 0;
 
   if (a === b && b === c) {
-    if (a === '💎') payout = bet * 10;
-    else if (a === '🍒') payout = bet * 3;
-    else payout = bet * 2;
+    payout = a === '💎' ? bet * 10 : a === '🍒' ? bet * 3 : bet * 2;
   } else if (a === b || b === c || a === c) {
     payout = bet * 2;
   }
 
-  // update backend balance
   req.session.user.balance = req.session.user.balance - bet + payout;
 
   res.json({
@@ -204,9 +313,8 @@ app.post('/slots/spin', requireAuth, (req, res) => {
   });
 });
 
-
+// MINES
 app.get('/mines', requireAuth, (req, res) => {
-
   const backgroundLayers = [
     "neon-clouds dim",
     "caustics softer",
@@ -217,16 +325,19 @@ app.get('/mines', requireAuth, (req, res) => {
   res.render('pages/mines', {
     title: 'Betwise — Mines',
     pageClass: 'mines-page ultra-ink',
-    siteName: 'BETWISE',
     backgroundLayers,
     user: req.session.user
   });
 });
 
-// LOGOUT //
+// LOGOUT
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
+// *****************************************************
+// <!-- Section 5 : Start Server -->
+// *****************************************************
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
