@@ -289,8 +289,17 @@ app.get('/profile', async (req, res) => {
 });
 
 app.get('/leaderboard', async (req, res) => {
-  res.render('pages/leaderboard');
-})
+  //document.getElementById("username-box").innerText = "hello";
+  const query = `SELECT * FROM users;`;
+
+  try {
+    const users = await db.any(query);  
+    res.render('pages/leaderboard', { users });
+  } catch (err) {
+    console.error(err);
+    res.render('pages/leaderboard', { users: [], error: "Failed to load leaderboard" });
+  }
+});
 
 
 // ================= TEST ROUTE ==================
