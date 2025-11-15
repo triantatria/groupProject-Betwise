@@ -293,7 +293,9 @@ app.get('/leaderboard', async (req, res) => {
   const query = `SELECT * FROM users;`;
 
   try {
-    const users = await db.any(query);  
+    const result = await pool.query(query);   // <-- FIXED
+    const users = result.rows; 
+     
     res.render('pages/leaderboard', { users });
   } catch (err) {
     console.error(err);

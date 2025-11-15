@@ -14,16 +14,9 @@
 
   <div class="login-center" style="display: flex; flex-direction: column; gap: 2rem; width: 90%; max-width: 600px;">
 
-    <div id="username-box"></div>
-    {{#if users}}
-      <div class="leaderboard-list glass-subtle" style="padding: 20px; border-radius: 12px; width: 100%;">
-        {{#each users}}
-            <strong>{{this.username}}</strong>
-        {{/each}}
-      </div>
-    {{else}}
-      <p style="opacity: 0.7; text-align: center;">No users found</p>
-    {{/if}}
+{{#each users}}
+  <div>{{this.username}}</div>
+{{/each}}
 
   </div>
 </div>
