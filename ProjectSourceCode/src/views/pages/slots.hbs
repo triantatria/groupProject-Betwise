@@ -1,89 +1,13 @@
-<div class="bg-layer neon-clouds dim"></div>
-<div class="bg-layer caustics softer"></div>
-<div class="bg-layer bloom-overlay subtle"></div>
-<div class="bg-layer neon-dots"></div>
+{{#each backgroundLayers}}
+  <div class="bg-layer {{this}}"></div>
+{{/each}}
 
-<nav class="nav-full glass-subtle">
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
-  <div class="nav-links">
-      <a href="#" class="nav-item">Profile</a>
-      <a href="#" class="nav-item">Leaderboard</a>
-      <a href="#" class="nav-item wallet">Wallet ▾</a>
-  </div>
-</nav>
+{{> nav }}
 
 <main class="slots-container fade-in">
   <h2 class="section-title soft-glow">Slots</h2>
 
-<!-- How to Play Dropdown -->
-<div class="glass-card soft fade-in mb-4 slot-rules-card" style="margin: 0 auto; text-align: center;">
-  <details class="slot-rules">
-    <summary 
-      style="
-        display: inline-block;
-        padding: 12px 24px;
-        font-family: 'Courier New', monospace;
-        font-size: 16px;
-        color: #0ff; /* neon text */
-        background: rgba(0, 255, 255, 0.1); /* translucent glass */
-        border: 1px solid rgba(0, 255, 255, 0.4);
-        border-radius: 8px;
-        cursor: pointer;
-        text-shadow: 0 0 4px #0ff;
-        transition: all 0.2s;
-        user-select: none;
-      "
-      onmouseover="this.style.background='rgba(0,255,255,0.2)'; this.style.textShadow='0 0 6px #0ff';"
-      onmouseout="this.style.background='rgba(0,255,255,0.1)'; this.style.textShadow='0 0 4px #0ff';"
-    >
-      How to Play
-    </summary>
-    <br>
-    <div class="rules-content mt-2">
-      <p>Enter a bet amount and press <strong>SPIN</strong> to play.</p>
-      <p>Match symbols across 3 reels to win credits based on the payout table below:</p>
-      <table style="margin: 0 auto; text-align: center; border-collapse: separate; border-spacing: 20px 10px;">
-        <thead>
-          <tr>
-            <th style="padding: 8px 16px;">Outcome</th>
-            <th style="padding: 8px 16px;">Example</th>
-            <th style="padding: 8px 16px;">Payout</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="padding: 8px 16px;">3 Diamonds</td>
-            <td style="padding: 8px 16px;">💎💎💎</td>
-            <td style="padding: 8px 16px;">Bet × 10</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 16px;">3 Cherries</td>
-            <td style="padding: 8px 16px;">🍒🍒🍒</td>
-            <td style="padding: 8px 16px;">Bet × 3</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 16px;">Other 3 of a kind</td>
-            <td style="padding: 8px 16px;">🍋🍋🍋 / 🍊🍊🍊</td>
-            <td style="padding: 8px 16px;">Bet × 2</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 16px;">Any 2 matching</td>
-            <td style="padding: 8px 16px;">🍋🍋🍊</td>
-            <td style="padding: 8px 16px;">Bet × 2</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 16px;">No match</td>
-            <td style="padding: 8px 16px;">🍉🍊⭐</td>
-            <td style="padding: 8px 16px;">- Bet</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="mt-2">Good luck!</p>
-    </div>
-  </details>
-</div>
-
-
+  {{> slotRules }}
 
   <div class="slot-machine glass-card deep">
     <div class="slot-window">
@@ -97,17 +21,12 @@
         <label>Bet</label>
         <input type="number" id="slotBet" class="bet-input">
       </div>
-
       <button class="slot-spin-btn mono-neon" id="slotSpin">SPIN</button>
     </div>
 
     <div class="slot-result" id="slotResult"></div>
   </div>
 </main>
-
-<footer class="footer-panel glass-subtle">
-  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
-</footer>
 
 <!-- Add your JS here -->
 <script src="/resources/js/slots.js"></script>

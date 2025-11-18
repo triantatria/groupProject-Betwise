@@ -104,3 +104,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const details = document.querySelector(".slot-rules");
+  if (!details) return;
+
+  const summary = details.querySelector(".rules-summary");
+  const closedText = summary.dataset.closedText;
+  const openText = summary.dataset.openText;
+
+  details.addEventListener("toggle", () => {
+    summary.textContent = details.open ? openText : closedText;
+  });
+});

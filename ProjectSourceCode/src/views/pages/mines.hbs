@@ -1,16 +1,8 @@
-<div class="bg-layer neon-clouds dim"></div>
-<div class="bg-layer caustics softer"></div>
-<div class="bg-layer bloom-overlay subtle"></div>
-<div class="bg-layer neon-dots"></div>
+{{#each backgroundLayers}}
+  <div class="bg-layer {{this}}"></div>
+{{/each}}
 
-<nav class="nav-full glass-subtle">
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
-  <div class="nav-links">
-    <a href="#" class="nav-item">Profile</a>
-    <a href="#" class="nav-item">Leaderboard</a>
-    <a href="#" class="nav-item wallet">Wallet ▾</a>
-  </div>
-</nav>
+{{> nav }}
 
 <main class="mines-container fade-in">
   <div class="mines-side glass-card">
@@ -32,7 +24,3 @@
     <div id="minesGrid"></div>
   </div>
 </main>
-
-<footer class="footer-panel glass-subtle">
-  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
-</footer>
