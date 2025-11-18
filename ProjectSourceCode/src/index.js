@@ -355,20 +355,20 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
 
   // Temporary mock data (replace with DB when ready)
   const rawLeaderboard = [
-    { rank: 1, username: "fish", score: 12500, status: "Legend" },
-    { rank: 2, username: "this fish", score: 11340, status: "Diamond" },
-    { rank: 3, username: "that fish", score: 9980, status: "Platinum" },
-    { rank: 4, username: "other fish", score: 8740, status: "Gold" },
-    { rank: 5, username: "yay fish!", score: 8210, status: "Gold" }
+    { rank: 1, username: "fish", balance: 12500, status: "Legend" },
+    { rank: 2, username: "this fish", balance: 11340, status: "Diamond" },
+    { rank: 3, username: "that fish", balance: 9980, status: "Platinum" },
+    { rank: 4, username: "other fish", balance: 8740, status: "Gold" },
+    { rank: 5, username: "yay fish!", balance: 8210, status: "Gold" }
   ];
 
   // Highest score defines 100%
-  const maxScore = Math.max(...rawLeaderboard.map(p => p.score));
+  const maxBalance = Math.max(...rawLeaderboard.map(p => p.balance));
 
   // Calculate progress %
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.score / maxScore) * 100)
+    progress: Math.round((p.balance / maxBalance) * 100)
   }));
 
   res.render('pages/leaderboard', {
