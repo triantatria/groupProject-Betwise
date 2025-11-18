@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     username     VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-    balance     BIGINT NOT NULL DEFAULT 0 CHECK (balance >= 0)
+    balance     BIGINT NOT NULL DEFAULT 1000 CHECK (balance >= 0)
 );
 
 

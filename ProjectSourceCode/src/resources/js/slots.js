@@ -5,33 +5,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultEl = document.getElementById('slotResult');
 
   // symbols array should match server symbols visually
-  const SYMBOLS = ['🍒','🔔','🍋','⭐','7️⃣','💎'];
+  const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
 
   function randomSymbol() {
     return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
   }
 
   // ---------------- BROWSER BALANCE ----------------
-  if (!localStorage.getItem('balance')) {
+  /*if (!localStorage.getItem('balance')) {
     localStorage.setItem('balance', '1000');
   }
+*/
 
-  function getBalance() {
+  /*function getBalance() {
     return parseFloat(localStorage.getItem('balance'));
   }
+  */
 
+  /*
   function setBalance(newBalance) {
     localStorage.setItem('balance', newBalance);
   }
+  */
+
+  // Balance from Server Session
+  let currentBalance = window.initialBalance ?? 0;
 
   // Show balance at the top of the page
   const balanceEl = document.createElement('p');
   balanceEl.id = 'slotBalance';
   balanceEl.style.textAlign = 'center';
   balanceEl.style.fontWeight = 'bold';
-  balanceEl.textContent = `Balance: $${getBalance().toFixed(2)}`;
-  document.querySelector('.slots-container').prepend(balanceEl);
-
+  balanceEl.textContent = `Balance: $${currentBalance.toFixed(2)}`;
+  const container = document.querySelector('.slots-container') || document.body;
+  container.prepend(balanceEl);
   // ---------------- ANIMATION ----------------
   function startAnimation() {
     return reelEls.map((el, idx) => {
@@ -51,9 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const currentBalance = getBalance();
+    //const currentBalance = getBalance();
     if (bet > currentBalance) {
-      resultEl.textContent = `You only have $${currentBalance.toFixed(2)}`;
+      resultEl.textContent = `You only have $${currentBalance.toFixed(2)} available to bet`;
       return;
     }
 
@@ -61,13 +68,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const timers = startAnimation();
 
     try {
-      // Simulate a server spin call
-      const reels = Array.from({ length: 3 }, () => randomSymbol());
+      // Call backend; backend decides reels + payout + newBalance
+      const res = await fetch('/slots/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bet })
+      });
 
-      // Calculate payout
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Server error processing spin.');
+      }
+
+      const { reels, payout, newBalance } = data;
+
+      /* Calculate payout
       const [a, b, c] = reels;
       let payout = 0;
+      */
 
+
+      /*
       if (a === b && b === c) {
         if (a === '💎') payout = bet * 10;
         else if (a === '🍒') payout = bet * 3;
@@ -77,6 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         payout = 0;
       }
+        */
+
 
       // Stop reels one by one
       for (let i = 0; i < reelEls.length; i++) {
@@ -85,11 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
         reelEls[i].textContent = reels[i];
       }
 
-      // Update and display balance
+      /* Update and display balance
       const newBalance = currentBalance - bet + payout;
       setBalance(newBalance);
       balanceEl.textContent = `Balance: $${newBalance.toFixed(2)}`;
+      */
 
+      // Update current balance from server
+      currentBalance = newBalance;
+      balanceEl.textContent = `Balance: $${currentBalance.toFixed(2)}`;
+
+      // Display balance change
       if (payout > 0) {
         resultEl.textContent = `You won $${payout.toFixed(2)}!`;
       } else {
@@ -98,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error(err);
-      resultEl.textContent = 'Network or server error.';
+      resultEl.textContent = err.message || 'Network or server error.';
     } finally {
       spinBtn.disabled = false;
     }

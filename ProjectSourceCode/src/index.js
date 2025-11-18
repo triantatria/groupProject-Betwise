@@ -52,7 +52,7 @@ function requireAuth(req, res, next) {
 // LOGIN PAGE //
 app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-    const backgroundLayers = [
+  const backgroundLayers = [
     "neon-clouds",
     "caustics",
     "particles",
@@ -104,7 +104,7 @@ app.post('/register', async (req, res) => {
   password = password.trim();
 
   // Check for empty fields
-  if (!username || !password) {
+  if (!cleanUsername || !password) {
     if (req.is('application/json')) {
       return res.status(400).json({ message: 'Invalid input' });
     }
@@ -133,6 +133,7 @@ app.post('/register', async (req, res) => {
     }
     const hashedPassword = bcrypt.hashSync(password, 10);
     console.log('REGISTER hashedPassword:', hashedPassword); // DEBUG
+    // 2) Insert new user
     const result = await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username',
       [cleanUsername, hashedPassword]);
     //req.session.user = { id: result.rows[0].user_id, username: result.rows[0].username };
@@ -162,7 +163,7 @@ app.post('/login', async (req, res) => {
   console.log('LOGIN BODY:', req.body); // DEBUG
   try {
     // 1) Fetch user by username 
-    const result = await pool.query('SELECT user_id, username, password_hash FROM users WHERE username = $1', [cleanUsername]);
+    const result = await pool.query('SELECT user_id, username, password_hash, balance FROM users WHERE username = $1', [cleanUsername]);
     console.log('LOGIN DB RESULT:', result.rows); // DEBUG
     // 2) If user not found 
     if (result.rowCount === 0) {
@@ -190,8 +191,25 @@ app.post('/login', async (req, res) => {
       });
     }
     // 4) Successful login 
-    req.session.user = { id: user.user_id, username: user.username };
-    res.redirect('/transition');
+    // Regenerate session to prevent fixation
+    req.session.regenerate(err => {
+      if (err) {
+        console.error('Session regenerate error:', err);
+        return res.render('pages/login', {
+          title: 'Login',
+          pageClass: 'login-page',
+          error: true,
+          message: 'Login error. Please try again.'
+        });
+      }
+      req.session.user = {
+        id: user.user_id,
+        username: user.username,
+        balance: user.balance
+      };
+      res.redirect('/transition');
+    });
+
   } catch (err) {
     console.error(err);
     res.render('pages/login', {
@@ -274,7 +292,7 @@ app.get('/blackjack', requireAuth, (req, res) => {
   });
 });
 
-app.get('/slots', requireAuth, (req, res) => {
+app.get('/slots', requireAuth, async (req, res) => {
 
   const backgroundLayers = [
     "neon-clouds dim",
@@ -283,65 +301,94 @@ app.get('/slots', requireAuth, (req, res) => {
     "neon-dots"
   ];
 
-  // initialize balance if it doesn't exist
-  if (req.session.user.balance == null) {
-    req.session.user.balance = 1000;
-  }
+  try {
+    // pull fresh balance from DB
+    const result = await pool.query(
+      'SELECT balance FROM users WHERE user_id = $1',
+      [req.session.user.id]
+    );
 
-  res.render('pages/slots', {
-    title: 'Betwise — Slots',
-    pageClass: 'slots-page ultra-ink',
-    siteName: 'BETWISE',
-    backgroundLayers,
-    user: req.session.user,
-    balance: req.session.user.balance
-  });
+    const balance = result.rows[0].balance;
+    req.session.user.balance = balance;  // keep session in sync
+
+    res.render('pages/slots', {
+      title: 'Betwise — Slots',
+      pageClass: 'slots-page ultra-ink',
+      siteName: 'BETWISE',
+      backgroundLayers,
+      user: req.session.user,
+      balance
+    });
+  } catch (err) {
+    console.error('Error loading slots page:', err);
+    res.status(500).send('Error loading slots page');
+  }
 });
 
-app.post('/slots/spin', requireAuth, (req, res) => {
+app.post('/slots/spin', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
 
   if (!bet || bet <= 0) {
     return res.status(400).json({ error: "Invalid bet amount." });
   }
 
-  // initialize balance if needed
+  try {
+    //1) pull fresh balance from DB
+    const result = await pool.query(
+      'SELECT balance FROM users WHERE user_id = $1',
+      [req.session.user.id]
+    );
+
+    let balance = result.rows[0].balance;
+    req.session.user.balance = balance;  // keep session in sync
+
+    if (bet > balance) {
+      return res.status(400).json({ error: "Insufficient balance." });
+    }
+    const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
+
+    // randomly pick 3 symbols
+    const reels = [
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
+    ];
+
+    const [a, b, c] = reels;
+    let payout = 0;
+
+    if (a === b && b === c) {
+      if (a === '💎') payout = bet * 10;
+      else if (a === '🍒') payout = bet * 3;
+      else payout = bet * 2;
+    } else if (a === b || b === c || a === c) {
+      payout = bet * 2;
+    }
+
+    // update backend balance
+    balance = balance - bet + payout;
+    await pool.query(
+      'UPDATE users SET balance = $1 WHERE user_id = $2',
+      [balance, req.session.user.id]
+    );
+    req.session.user.balance = balance; // keep session in sync
+
+    res.json({
+      reels,
+      payout,
+      newBalance: balance
+    });
+  }
+  /* initialize balance if needed
   if (req.session.user.balance == null) {
     req.session.user.balance = 1000;
   }
+  */
 
-  if (bet > req.session.user.balance) {
-    return res.status(400).json({ error: "Insufficient balance." });
+  catch (err) {
+    console.error('Error in slots/spin:', err);
+    res.status(500).json({ error: "Server error processing spin." });
   }
-
-  const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
-
-  // randomly pick 3 symbols
-  const reels = [
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
-  ];
-
-  const [a, b, c] = reels;
-  let payout = 0;
-
-  if (a === b && b === c) {
-    if (a === '💎') payout = bet * 10;
-    else if (a === '🍒') payout = bet * 3;
-    else payout = bet * 2;
-  } else if (a === b || b === c || a === c) {
-    payout = bet * 2;
-  }
-
-  // update backend balance
-  req.session.user.balance = req.session.user.balance - bet + payout;
-
-  res.json({
-    reels,
-    payout,
-    newBalance: req.session.user.balance
-  });
 });
 
 
