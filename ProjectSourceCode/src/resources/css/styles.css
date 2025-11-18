@@ -603,68 +603,190 @@ details[open] .rules-summary {
 
 @keyframes reelScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
 
-/* LOGIN PAGE */
-.login-page {
-  background: radial-gradient(circle at 50% 50%, #000000 0%, #000410 60%, #001b2c 100%);
-  color: #e9faff; height: 100vh; display: flex; align-items: center; justify-content: center;
-  overflow: hidden; position: relative; text-align: center;
+/* AUTH PAGES - LOGIN + REGISTER */
+
+.login-page,
+.register-page {
+  background: radial-gradient(circle at 50% 50%, #000000 0%, #000410 60%, #03283e 100%);
+  color: #e9faff;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
 }
 
-.login-page .bg-layer { opacity: .2; filter: brightness(.5) blur(100px); z-index: 0; }
-
-.login-page .center-stage {
-  z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; width: 100%; max-width: 460px; padding: 2rem; margin: 0 auto;
+.login-page .bg-layer,
+.register-page .bg-layer {
+  opacity: .2;
+  filter: brightness(.5) blur(100px);
+  z-index: 0;
 }
 
+.register-page {
+  background: radial-gradient(
+      circle at 50% 50%,
+      #00030a 0%,
+      #001427 55%,
+      #002238 100%
+  );
+}
+
+/* Shared center container */
+.login-page .center-stage,
+.register-page .center-stage {
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  max-width: 460px;
+  padding: 2rem;
+  margin: 0 auto;
+}
+
+/* SHARED LOGO + SLOGAN STYLE (NO ANIMATION BY DEFAULT) */
 .login-entry .logo-title {
   font-family: "Audiowide", sans-serif;
   font-size: clamp(4rem, 10vw, 6.5rem);
-  letter-spacing: .12em; color: #e6faff;
+  letter-spacing: .12em;
+  color: #e6faff;
   text-shadow: 0 0 28px #00eaff, 0 0 55px #00c2ff;
-  opacity: 0; transform: translateY(45px) scale(.95);
-  animation: logoPop .9s cubic-bezier(.15,1.4,.35,1) forwards .2s;
+  opacity: 1;
+  transform: none;
 }
 
 .login-entry .bw-slogan {
-  font-size: 1.2rem; color: #bfefff; margin-top: .3rem;
-  opacity: 0; transform: translateY(20px);
+  font-size: 1.2rem;
+  color: #bfefff;
+  margin-top: .3rem;
+  opacity: 1;
+  transform: none;
+}
+
+/* LOGIN-ONLY ANIMATIONS */
+.login-page .login-entry .logo-title {
+  opacity: 0;
+  transform: translateY(45px) scale(.95);
+  animation: logoPop .9s cubic-bezier(.15,1.4,.35,1) forwards .2s;
+}
+
+.login-page .login-entry .bw-slogan {
+  opacity: 0;
+  transform: translateY(20px);
   animation: fadeInUp .8s ease .45s forwards;
 }
 
+/* SHARED GLASS CARD BASE */
 .login-center {
-  margin-top: 2rem; width: 100%; background: rgba(5,15,25,.78);
-  border: 1px solid rgba(255,255,255,.15); border-radius: 16px;
-  padding: 2.4rem 2.4rem; text-align: center; backdrop-filter: blur(18px);
+  margin-top: 2rem;
+  width: 100%;
+  background: rgba(5,15,25,.78);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 16px;
+  padding: 2.4rem 2.4rem;
+  text-align: center;
+  backdrop-filter: blur(18px);
   box-shadow: 0 0 40px rgba(0,234,255,.15);
-  opacity: 0; transform: translateY(30px);
+  opacity: 1;
+  transform: none;
+}
+
+/* LOGIN-ONLY CARD ANIMATION */
+.login-page .login-center {
+  opacity: 0;
+  transform: translateY(30px);
   animation: fadeInUp 1s ease .55s forwards;
 }
 
-.login-form { display: flex; flex-direction: column; gap: 1.3rem; margin-top: .4rem; }
+/* FORM LAYOUT (shared) */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+  margin-top: .4rem;
+}
 
 .input-group label {
-  text-align: left; font-size: .95rem; color: #cfefff; opacity: .9; margin-bottom: .4rem; display: block;
+  text-align: left;
+  font-size: .95rem;
+  color: #cfefff;
+  opacity: .9;
+  margin-bottom: .4rem;
+  display: block;
 }
 
 .input-group input {
-  width: 100%; padding: 1rem 1.2rem; background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.22); border-radius: 12px; color: white; font-size: 1rem; transition: .2s;
+  width: 100%;
+  padding: 1rem 1.2rem;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  transition: .2s;
 }
-.input-group input:focus { border-color: #00eaff; box-shadow: 0 0 14px #00eaff77; }
 
+.input-group input:focus {
+  border-color: #00eaff;
+  box-shadow: 0 0 14px #00eaff77;
+}
+
+/* BUTTON (shared) */
 .enter-button {
-  margin-top: 1.6rem; width: 100%; padding: 1rem;
+  margin-top: 1.6rem;
+  width: 100%;
+  padding: 1rem;
   background: linear-gradient(135deg, #001622, #002f49);
-  border: 1px solid rgba(0,234,255,.4); border-radius: 12px;
-  color: #eaffff; font-weight: 600; font-size: 1.1rem; cursor: pointer;
-  transition: .3s; animation: neonPulse 3s infinite;
+  border: 1px solid rgba(0,234,255,.4);
+  border-radius: 12px;
+  color: #eaffff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: .3s;
+  animation: neonPulse 3s infinite;
 }
-.enter-button:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 0 22px #00eaffaa, 0 0 40px #ff00e588; }
 
-.login-footer-text { margin-top: 1.2rem; font-size: .9rem; color: #bfefff; }
-.login-footer-text a { color: #00eaff; text-decoration: none; font-weight: 500; }
-.login-footer-text a:hover { text-shadow: 0 0 10px #00eaffaa; }
+.enter-button:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 0 22px #00eaffaa, 0 0 40px #ff00e588;
+}
+
+/* FOOTER TEXT (shared) */
+.login-footer-text {
+  margin-top: 1.2rem;
+  font-size: .9rem;
+  color: #bfefff;
+}
+
+.login-footer-text a {
+  color: #00eaff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer-text a:hover {
+  text-shadow: 0 0 10px #00eaffaa;
+}
+
+.register-page {
+  background: radial-gradient(
+      circle at 50% 50%,
+      #00030a 0%,
+      #001427 55%,
+      #002238 100%
+  );
+}
+
+.login-page,
+.register-page {
+  transition: background 0.8s ease;
+}
 
 /* LEADERBOARD PAGE */
 
@@ -1036,6 +1158,7 @@ details[open] .rules-summary {
 
 /* Login animations */
 @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(25px); } 100% { opacity: 1; transform: translateY(0); } }
+
 
 /* TRANSITION PAGE */
 .transition-page {
