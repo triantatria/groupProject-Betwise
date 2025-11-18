@@ -17,17 +17,6 @@ require('dotenv').config();
 // <!-- Section 2 : Connect to DB -->
 // *****************************************************
 
-// Database connection setup
-const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.POSTGRES_HOST || 'localhost',
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
-  port: 5432,
-});
-
-
-// Handlebars setup
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
@@ -96,14 +85,6 @@ app.use((req, res, next) => {
 
 // LOGIN PAGE
 app.get('/', (req, res) => {
-  if (req.session.user) {
-    return res.redirect('/home');   // logged in → go to home
-  }
-  return res.redirect('/login');    // not logged in → redirect to /login
-});
-
-// REGISTER PAGE //
-app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
 
   const backgroundLayers = [
@@ -374,48 +355,30 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
 
   // Temporary mock data (replace with DB when ready)
   const rawLeaderboard = [
-    { rank: 1, username: "fish", balance: 12500, status: "Legend" },
-    { rank: 2, username: "this fish", balance: 11340, status: "Diamond" },
-    { rank: 3, username: "that fish", balance: 9980, status: "Platinum" },
-    { rank: 4, username: "other fish", balance: 8740, status: "Gold" },
-    { rank: 5, username: "yay fish!", balance: 8210, status: "Gold" }
+    { rank: 1, username: "fish", score: 12500, status: "Legend" },
+    { rank: 2, username: "this fish", score: 11340, status: "Diamond" },
+    { rank: 3, username: "that fish", score: 9980, status: "Platinum" },
+    { rank: 4, username: "other fish", score: 8740, status: "Gold" },
+    { rank: 5, username: "yay fish!", score: 8210, status: "Gold" }
   ];
 
   // Highest score defines 100%
-  const maxBalance = Math.max(...rawLeaderboard.map(p => p.balance));
+  const maxScore = Math.max(...rawLeaderboard.map(p => p.score));
 
   // Calculate progress %
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.balance / maxBalance) * 100)
+    progress: Math.round((p.score / maxScore) * 100)
   }));
-  const query = `SELECT * FROM users;`;
-  const query2 = `SELECT u.user_id, u.username, b.wins, b.best_score, b.updated_at
-                  FROM blackjack_leaderboard b
-                  JOIN users u ON u.user_id = b.user_id
-                  ORDER BY b.wins DESC
-                  LIMIT 10`;
 
-  try {
-    const result = await db.query(query);   // <-- FIXED
-    const users = result.rows; 
-
-    const result2 = await db.query(query2); 
-
-    res.render('pages/leaderboard', {
-      users,
-      title: 'Betwise — Leaderboard',
-      pageClass: 'leaderboard-page ultra-ink',
-      backgroundLayers,
-      siteName: 'BETWISE',
-      user: req.session.user,
-      leaderboard
-    });
-  } catch (err) {
-    console.error(err);
-    res.render('pages/leaderboard', { users: [], error: "Failed to load leaderboard" });
-  }
-
+  res.render('pages/leaderboard', {
+    title: 'Betwise — Leaderboard',
+    pageClass: 'leaderboard-page ultra-ink',
+    backgroundLayers,
+    siteName: 'BETWISE',
+    user: req.session.user,
+    leaderboard
+  });
 });
 
 // WALLET
