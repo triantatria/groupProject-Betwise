@@ -1181,6 +1181,42 @@ details[open] .rules-summary {
   animation: fadeInText 1.8s ease .6s forwards; color: #bfefff;
 }
 
+.profile-actions {
+  display: flex;
+  flex-direction: column;  /* stack buttons vertically */
+  gap: 1rem;               /* spacing between buttons */
+  margin-top: 2rem;        /* space below user info */
+  align-items: center;     /* center buttons horizontally */
+  z-index: 10;             /* make sure buttons are above background layers */
+  position: relative;      /* needed for z-index */
+}
+
+.profile-actions .enter-button {
+  color: #fff;
+  background-color: #1e90ff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+
+  /* make visible immediately */
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.profile-title {
+  font-family: "Audiowide";
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  color: #ffffff;       /* solid white */
+  opacity: 1;           /* fully opaque */
+  text-shadow: 
+    0 0 20px #00eaffaa;
+}
+
+
 @keyframes fadeInCenter { 0% { opacity: 0; transform: translateY(40px) scale(.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes logoPulse { 0% { text-shadow: 0 0 28px #00eaff, 0 0 48px #ff00e5; } 100% { text-shadow: 0 0 38px #00eaffaa, 0 0 68px #ff00e566; } }
 @keyframes fadeInText { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }

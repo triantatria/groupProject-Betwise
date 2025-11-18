@@ -17,6 +17,17 @@ require('dotenv').config();
 // <!-- Section 2 : Connect to DB -->
 // *****************************************************
 
+// Database connection setup
+const pool = new Pool({
+  user: process.env.POSTGRES_USER,
+  host: process.env.POSTGRES_HOST || 'localhost',
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASSWORD,
+  port: 5432,
+});
+
+
+// Handlebars setup
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
@@ -85,6 +96,14 @@ app.use((req, res, next) => {
 
 // LOGIN PAGE
 app.get('/', (req, res) => {
+  if (req.session.user) {
+    return res.redirect('/home');   // logged in → go to home
+  }
+  return res.redirect('/login');    // not logged in → redirect to /login
+});
+
+// REGISTER PAGE //
+app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
 
   const backgroundLayers = [
