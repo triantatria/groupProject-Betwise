@@ -2,6 +2,12 @@
 const Blackjack = (() => {
   const suits = ['spade', 'heart', 'diamond', 'club'];
   const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  const suitSymbols = {
+    spade: '♠',
+    heart: '♥',
+    diamond: '♦',
+    club: '♣'
+  };
 
   let deck = [];
   let playerHand = [];
@@ -69,7 +75,7 @@ const Blackjack = (() => {
         el.classList.add("back");
         el.textContent = "";
       } else {
-        el.textContent = `${card.rank}${card.suit}`;
+        el.textContent = `${card.rank}${suitSymbols[card.suit]}`;
       }
       container.appendChild(el);
     });
