@@ -73,6 +73,16 @@ function requireAuth(req, res, next) {
 // <!-- Section 4 : Routes -->
 // *****************************************************
 
+// Make balance available to all templates automatically
+app.use((req, res, next) => {
+  if (req.session.user) {
+    res.locals.balance = req.session.user.balance ?? 0;
+  } else {
+    res.locals.balance = null;
+  }
+  next();
+});
+
 // LOGIN PAGE
 app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/home');
@@ -266,7 +276,7 @@ app.get('/slots', requireAuth, (req, res) => {
     "neon-dots"
   ];
 
-  if (req.session.user.balance == null) req.session.user.balance = 1000;
+  if (req.session.user.balance == null) req.session.user.balance = 0;
 
   res.render('pages/slots', {
     title: 'Betwise — Slots',
@@ -371,6 +381,39 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
   });
 });
 
+// WALLET
+app.get('/wallet', requireAuth, async (req, res) => {
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
+  // Sample data
+  let transactions = [
+    { type: "Deposit", amount: 250, date: "2025-01-12" },
+    { type: "Withdrawal", amount: -100, date: "2025-01-10" },
+    { type: "Game Win", amount: 450, date: "2025-01-05" },
+    { type: "Slot Spin", amount: -50, date: "2025-01-03" }
+  ];
+
+  // Add safe comparison value
+  transactions = transactions.map(t => ({
+    ...t,
+    amountPositive: t.amount > 0
+  }));
+
+  res.render('pages/wallet', {
+    title: 'Betwise — Wallet',
+    pageClass: 'wallet-page ultra-ink',
+    backgroundLayers,
+    siteName: 'BETWISE',
+    user: req.session.user,
+    balance: req.session.user.balance,
+    transactions
+  });
+});
 
 // LOGOUT
 app.get('/logout', (req, res) => {
