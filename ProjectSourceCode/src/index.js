@@ -73,6 +73,16 @@ function requireAuth(req, res, next) {
 // <!-- Section 4 : Routes -->
 // *****************************************************
 
+// Make balance available to all templates automatically
+app.use((req, res, next) => {
+  if (req.session.user) {
+    res.locals.balance = req.session.user.balance ?? 0;
+  } else {
+    res.locals.balance = null;
+  }
+  next();
+});
+
 // LOGIN PAGE
 app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/home');
@@ -266,7 +276,7 @@ app.get('/slots', requireAuth, (req, res) => {
     "neon-dots"
   ];
 
-  if (req.session.user.balance == null) req.session.user.balance = 1000;
+  if (req.session.user.balance == null) req.session.user.balance = 0;
 
   res.render('pages/slots', {
     title: 'Betwise — Slots',
@@ -331,6 +341,95 @@ app.get('/mines', requireAuth, (req, res) => {
     backgroundLayers,
     siteName: 'BETWISE',
     user: req.session.user
+  });
+});
+
+// LEADERBOARD
+app.get('/leaderboard', requireAuth, async (req, res) => {
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
+  // Temporary mock data (replace with DB when ready)
+  const rawLeaderboard = [
+    { rank: 1, username: "fish", balance: 12500, status: "Legend" },
+    { rank: 2, username: "this fish", balance: 11340, status: "Diamond" },
+    { rank: 3, username: "that fish", balance: 9980, status: "Platinum" },
+    { rank: 4, username: "other fish", balance: 8740, status: "Gold" },
+    { rank: 5, username: "yay fish!", balance: 8210, status: "Gold" }
+  ];
+
+  // Highest score defines 100%
+  const maxBalance = Math.max(...rawLeaderboard.map(p => p.balance));
+
+  // Calculate progress %
+  const leaderboard = rawLeaderboard.map(p => ({
+    ...p,
+    progress: Math.round((p.balance / maxBalance) * 100)
+  }));
+  const query = `SELECT * FROM users;`;
+  const query2 = `SELECT u.user_id, u.username, b.wins, b.best_score, b.updated_at
+                  FROM blackjack_leaderboard b
+                  JOIN users u ON u.user_id = b.user_id
+                  ORDER BY b.wins DESC
+                  LIMIT 10`;
+
+  try {
+    const result = await db.query(query);   // <-- FIXED
+    const users = result.rows; 
+
+    const result2 = await db.query(query2); 
+
+    res.render('pages/leaderboard', {
+      users,
+      title: 'Betwise — Leaderboard',
+      pageClass: 'leaderboard-page ultra-ink',
+      backgroundLayers,
+      siteName: 'BETWISE',
+      user: req.session.user,
+      leaderboard
+    });
+  } catch (err) {
+    console.error(err);
+    res.render('pages/leaderboard', { users: [], error: "Failed to load leaderboard" });
+  }
+
+});
+
+// WALLET
+app.get('/wallet', requireAuth, async (req, res) => {
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
+  ];
+
+  // Sample data
+  let transactions = [
+    { type: "Deposit", amount: 250, date: "2025-01-12" },
+    { type: "Withdrawal", amount: -100, date: "2025-01-10" },
+    { type: "Game Win", amount: 450, date: "2025-01-05" },
+    { type: "Slot Spin", amount: -50, date: "2025-01-03" }
+  ];
+
+  // Add safe comparison value
+  transactions = transactions.map(t => ({
+    ...t,
+    amountPositive: t.amount > 0
+  }));
+
+  res.render('pages/wallet', {
+    title: 'Betwise — Wallet',
+    pageClass: 'wallet-page ultra-ink',
+    backgroundLayers,
+    siteName: 'BETWISE',
+    user: req.session.user,
+    balance: req.session.user.balance,
+    transactions
   });
 });
 
