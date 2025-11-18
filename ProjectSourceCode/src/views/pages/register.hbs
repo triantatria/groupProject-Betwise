@@ -14,7 +14,7 @@
       <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">{{message}}</div>
     {{/if}}
 
-    <form class="register-form" action="/register" method="post">
+    <form id="registerForm" class="register-form" action="/register" method="post">
       <div class="input-group">
         <label for="username">Username</label>
         <input id="username" name="username" type="text" placeholder="Enter your username" required />
@@ -22,7 +22,9 @@
 
       <div class="input-group">
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" placeholder="Enter your password" required />
+        <input id="password" name="password" type="password" placeholder="Enter your password" required
+        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+        title="At least 8 characters, with uppercase, lowercase, a number, and a symbol." />
       </div>
 
       <button type="submit" class="enter-button">Register</button>

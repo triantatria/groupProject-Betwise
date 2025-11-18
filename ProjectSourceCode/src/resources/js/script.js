@@ -64,3 +64,25 @@ if (spinBtn && reels.every(r => r)) {
 
 
 
+// Global client-side scripts
+
+document.addEventListener('DOMContentLoaded', () => {
+  const registerForm = document.getElementById('registerForm');
+  if (!registerForm) return; // not on the register page
+
+  const passwordInput = document.getElementById('password');
+
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+  registerForm.addEventListener('submit', (e) => {
+    const pwd = passwordInput.value;
+
+    if (!passwordRegex.test(pwd)) {
+      e.preventDefault();
+      alert(
+        'Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character.'
+      );
+    }
+  });
+});

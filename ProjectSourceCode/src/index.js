@@ -9,6 +9,11 @@ const bcrypt = require('bcryptjs'); //  To hash passwords
 require('dotenv').config(); // Load environment variables
 const { Pool } = require('pg'); // PostgreSQL client
 
+
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+
 // Database connection setup
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
@@ -70,6 +75,7 @@ app.get('/register', (req, res) => {
 // HANDLE REGISTRATION 
 app.post('/register', async (req, res) => {
   let { username, password } = req.body;
+
   // ---------- INPUT VALIDATION (NEGATIVE TEST) ----------
   // Make sure they are strings first
   if (typeof username !== 'string' || typeof password !== 'string') {
@@ -88,7 +94,7 @@ app.post('/register', async (req, res) => {
   password = password.trim();
 
   // Check for empty fields
-  if (!username || !password) {
+  if (!cleanUsername || !password) {
     if (req.is('application/json')) {
       return res.status(400).json({ message: 'Invalid input' });
     }
@@ -99,12 +105,32 @@ app.post('/register', async (req, res) => {
       message: 'Invalid input.'
     });
   }
+
+  // Password complexity check
+  if (!passwordRegex.test(password)) {
+    if (req.is('application/json')) {
+      // keep same contract for tests
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      error: true,
+      message:
+        'Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character.'
+    });
+  }
+
   try {
     // 1) Check if username already exists 
-    const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [cleanUsername]);
+    const existing = await pool.query(
+      'SELECT 1 FROM users WHERE username = $1',
+      [cleanUsername]
+    );
     console.log('REGISTER existing.rowCount:', existing.rowCount); // DEBUG
+
     if (existing.rowCount > 0) {
-      //Negative test JSON request
+      // Negative test JSON request
       if (req.is('application/json')) {
         return res.status(400).json({ message: 'Invalid input' });
       }
@@ -115,22 +141,27 @@ app.post('/register', async (req, res) => {
         message: 'Registration failed. Username already taken.'
       });
     }
+
+    // 2) Hash password and insert
     const hashedPassword = bcrypt.hashSync(password, 10);
     console.log('REGISTER hashedPassword:', hashedPassword); // DEBUG
-    const result = await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username',
-      [cleanUsername, hashedPassword]);
-    //req.session.user = { id: result.rows[0].user_id, username: result.rows[0].username };
+
+    const result = await pool.query(
+      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username',
+      [cleanUsername, hashedPassword]
+    );
     console.log('REGISTER inserted user:', result.rows[0]); // DEBUG
-    // Positive test + browser: always send 302 with Location + JSON body
-    // If this is the test (JSON), send 302 + JSON body
+
+    // JSON tests → 302 with JSON body
     if (req.is('application/json')) {
       return res.status(302).json({ message: 'Success' });
     }
+
     // Normal browser form submit → redirect to transition page
     return res.redirect(302, '/transition');
   } catch (err) {
     console.error(err);
-    res.render('pages/register', {
+    return res.render('pages/register', {
       title: 'Register',
       pageClass: 'register-page',
       error: true,
