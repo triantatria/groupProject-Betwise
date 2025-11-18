@@ -291,12 +291,19 @@ app.get('/profile', async (req, res) => {
 app.get('/leaderboard', async (req, res) => {
   //document.getElementById("username-box").innerText = "hello";
   const query = `SELECT * FROM users;`;
+  const query2 = `SELECT u.user_id, u.username, b.wins, b.best_score, b.updated_at
+                  FROM blackjack_leaderboard b
+                  JOIN users u ON u.user_id = b.user_id
+                  ORDER BY b.wins DESC
+                  LIMIT 10`;
 
   try {
     const result = await pool.query(query);   // <-- FIXED
     const users = result.rows; 
-     
-    res.render('pages/leaderboard', { users });
+
+    const result2 = await pool.query(query2); 
+
+    res.render('pages/leaderboard', { users, result2 });
   } catch (err) {
     console.error(err);
     res.render('pages/leaderboard', { users: [], error: "Failed to load leaderboard" });

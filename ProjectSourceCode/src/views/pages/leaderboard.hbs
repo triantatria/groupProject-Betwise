@@ -13,10 +13,21 @@
   </p>
 
   <div class="login-center" style="display: flex; flex-direction: column; gap: 2rem; width: 90%; max-width: 600px;">
-
+<div class ="row">
 {{#each users}}
-  <div>{{this.username}}</div>
+<div style="display: flex; gap: 1rem;">
+  <div class="col-md-12 mb-12" style="text-align: left; gap: 2rem; display: flex; flex-direction: column; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 12px;">
+      {{this.username}}
+  </div>
+
+  <div class="col-md-4 mb-4" style="text-align: left; gap: 2rem; display: flex; flex-direction: column; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 12px;">
+      {{this.wins}} wins
+  </div>
+</div>
 {{/each}}
+</div>
+<hr>
+
 
   </div>
 </div>
