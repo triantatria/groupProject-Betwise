@@ -7,25 +7,34 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const bcrypt = require('bcryptjs'); //  To hash passwords
 require('dotenv').config(); // Load environment variables
-const { Pool } = require('pg'); // PostgreSQL client
-
-// Database connection setup
-const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.POSTGRES_HOST || 'localhost',
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
-  port: 5432,
-});
 
 
-// Handlebars setup
+
 const hbs = handlebars.create({
   extname: 'hbs',
-  layoutsDir: path.join(__dirname, 'views/layouts'),
-  partialsDir: path.join(__dirname, 'views/partials'),
+  layoutsDir: __dirname + '/views/layouts',
+  partialsDir: __dirname + '/views/partials',
   defaultLayout: 'main',
 });
+
+const dbConfig = {
+  host: 'db',
+  port: 5432,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+};
+
+const db = pgp(dbConfig);
+
+db.connect()
+  .then(obj => {
+    console.log('Database connection successful');
+    obj.done();
+  })
+  .catch(error => {
+    console.log('ERROR:', error.message || error);
+  });
 
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
