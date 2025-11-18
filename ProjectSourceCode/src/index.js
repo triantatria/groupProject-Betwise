@@ -51,8 +51,13 @@ function requireAuth(req, res, next) {
 // LOGIN PAGE //
 app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-  res.status(302).render('pages/login', { title: 'Login', pageClass: 'login-page' });
+  res.status(302).render('pages/login', { 
+    title: 'Login', 
+    pageClass: 'login-page',
+    hideFooter: true  
+  });
 });
+
 
 app.get('/', (req, res) => {
   if (req.session.user) {
@@ -64,8 +69,13 @@ app.get('/', (req, res) => {
 // REGISTER PAGE //
 app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
-  res.render('pages/register', { title: 'Register', pageClass: 'register-page' });
+  res.render('pages/register', { 
+    title: 'Register', 
+    pageClass: 'register-page',
+    hideFooter: true  
+  });
 });
+
 
 // HANDLE REGISTRATION 
 app.post('/register', async (req, res) => {
@@ -187,11 +197,16 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// TRANSITION PAGE //
+// transition route
 app.get('/transition', (req, res) => {
   if (!req.session.user) return res.redirect('/');
-  res.render('pages/transition', { title: 'Flowing...', pageClass: 'transition-page' });
+  res.render('pages/transition', { 
+    title: 'Flowing...', 
+    pageClass: 'transition-page',
+    hideFooter: true   
+  });
 });
+
 
 // ================= HOME ==================
 app.get('/home', requireAuth, (req, res) => {
