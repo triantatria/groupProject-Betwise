@@ -268,25 +268,37 @@ app.post('/api/slots/spin', (req, res) => {
   res.json({ reels, payout, balance });
 });
 
-// PROFILE PAGE (no authentication required for now)
-app.get('/profile', async (req, res) => {
+// PROFILE PAGE (authentication required)
+app.get('/profile', requireAuth, async (req, res) => {
   try {
-    // Optional: fetch some dummy data or just hardcode
+    // Fetch user info from DB if needed
+    const user = req.session.user;
+
+    // TEMP: hardcoded for layout
     const userData = {
-      username: 'DemoUser',
-      email: 'demo@example.com',
+      username: user.username,
+      email: "placeholder@example.com",
+      name: "Placeholder Name",
+      credits: 0
     };
 
     res.render('pages/profile', {
       title: 'Profile',
       pageClass: 'profile-page',
-      user: userData, // pass dummy data so you can style page
+      user: userData
     });
   } catch (err) {
     console.error(err);
-    res.redirect('/home'); // fallback
+    res.redirect('/home');
   }
 });
+
+app.post('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+
 
 
 
