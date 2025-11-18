@@ -1,20 +1,12 @@
-<div class="bg-layer neon-clouds dim"></div>
-<div class="bg-layer caustics softer"></div>
-<div class="bg-layer bloom-overlay subtle"></div>
-<div class="bg-layer neon-dots"></div>
+{{#each backgroundLayers}}
+  <div class="bg-layer {{this}}"></div>
+{{/each}}
 
-<nav class="nav-full glass-subtle">
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
-  <div class="nav-links">
-    <a href="/profile" class="nav-item">Profile</a>
-    <a href="#" class="nav-item">Leaderboard</a>
-    <a href="#" class="nav-item wallet">Wallet ▾</a>
-  </div>
-</nav>
+{{> nav }}
 
 <main class="blackjack-container fade-in">
-
   <div class="bj-side">
+    
     <section class="bj-panel dealer-zone glass-card">
       <h2 class="bj-label">Dealer</h2>
       <div class="bj-cards" id="dealerCards"></div>
@@ -26,6 +18,7 @@
       <div class="bj-cards" id="playerCards"></div>
       <div class="bj-score" id="playerScore">Score: —</div>
     </section>
+
   </div>
 
   <aside class="bj-main-controls glass-card">
@@ -44,5 +37,4 @@
 
     <div class="bj-result" id="bjResultText"></div>
   </aside>
-
 </main>

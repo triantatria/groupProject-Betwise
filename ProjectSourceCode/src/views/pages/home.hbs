@@ -2,54 +2,26 @@
 <div class="bg-layer caustics softer"></div>
 <div class="bg-layer bloom-overlay subtle"></div>
 
-<nav class="nav-full glass-subtle">
-  <div class="nav-logo big">BETWISE</div>
-  <div class="nav-links">
-    <a href="/profile" class="nav-item">Profile</a>
-    <a href="#" class="nav-item">Leaderboard</a>
-    <a href="#" class="nav-item wallet">Wallet ▾</a>
-  </div>
-</nav>
+{{> nav }}
 
 <section class="games-area fade-in">
   <h2 class="section-title">Choose Your Game</h2>
 
   <div class="game-grid">
+    {{#each games}}
     <div class="game-card glass-card deep">
       <div class="card-img blank"></div>
       <div class="card-body">
-        <h3>Slots</h3>
-        <p>Spin the reels and test your luck!</p>
+        <h3>{{name}}</h3>
+        <p>{{description}}</p>
       </div>
       <div class="card-foot">
-        <span class="tag">Classic</span>
-        <button onclick="location.href='/slots'" class="play-btn">Play</button>
+        <span class="tag">{{tag}}</span>
+        <button class="play-btn" data-nav="{{route}}">Play</button>
       </div>
     </div>
-
-    <div class="game-card glass-card deep">
-      <div class="card-img blank"></div>
-      <div class="card-body">
-        <h3>Blackjack</h3>
-        <p>Beat the dealer and hit 21.</p>
-      </div>
-      <div class="card-foot">
-        <span class="tag">Card Game</span>
-        <button onclick="location.href='/blackjack'" class="play-btn">Play</button>
-      </div>
-    </div>
-
-    <div class="game-card glass-card deep">
-      <div class="card-img blank"></div>
-      <div class="card-body">
-        <h3>Mines</h3>
-        <p>Choose wisely and avoid the bombs!</p>
-      </div>
-      <div class="card-foot">
-        <span class="tag">Strategy</span>
-        <button onclick="location.href='/mines'" class="play-btn">Play</button>
-      </div>
-    </div>
+    {{/each}}
   </div>
+
 </section>
 
