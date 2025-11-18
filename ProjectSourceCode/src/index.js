@@ -370,15 +370,33 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
     ...p,
     progress: Math.round((p.balance / maxBalance) * 100)
   }));
+  const query = `SELECT * FROM users;`;
+  const query2 = `SELECT u.user_id, u.username, b.wins, b.best_score, b.updated_at
+                  FROM blackjack_leaderboard b
+                  JOIN users u ON u.user_id = b.user_id
+                  ORDER BY b.wins DESC
+                  LIMIT 10`;
 
-  res.render('pages/leaderboard', {
-    title: 'Betwise — Leaderboard',
-    pageClass: 'leaderboard-page ultra-ink',
-    backgroundLayers,
-    siteName: 'BETWISE',
-    user: req.session.user,
-    leaderboard
-  });
+  try {
+    const result = await db.query(query);   // <-- FIXED
+    const users = result.rows; 
+
+    const result2 = await db.query(query2); 
+
+    res.render('pages/leaderboard', {
+      users,
+      title: 'Betwise — Leaderboard',
+      pageClass: 'leaderboard-page ultra-ink',
+      backgroundLayers,
+      siteName: 'BETWISE',
+      user: req.session.user,
+      leaderboard
+    });
+  } catch (err) {
+    console.error(err);
+    res.render('pages/leaderboard', { users: [], error: "Failed to load leaderboard" });
+  }
+
 });
 
 // WALLET
