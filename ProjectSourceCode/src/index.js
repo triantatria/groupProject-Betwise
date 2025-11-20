@@ -1,5 +1,5 @@
 // *****************************************************
-// <!-- Section 1 : Import Dependencies -->
+// Section 1 : Import Dependencies
 // *****************************************************
 
 const express = require('express');
@@ -14,7 +14,7 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 // *****************************************************
-// <!-- Section 2 : Connect to DB -->
+// Section 2 : Connect to DB (pg-promise ONLY)
 // *****************************************************
 
 const hbs = handlebars.create({
@@ -44,7 +44,7 @@ db.connect()
   });
 
 // *****************************************************
-// <!-- Section 3 : App Settings -->
+// Section 3 : App Settings
 // *****************************************************
 
 app.engine('hbs', hbs.engine);
@@ -55,6 +55,8 @@ app.use('/resources', express.static(path.join(__dirname, 'resources')));
 app.use('/resources', express.static(path.join(__dirname, '..', 'resources')));
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'dev_secret_key',
@@ -69,79 +71,120 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// *****************************************************
-// <!-- Section 4 : Routes -->
-// *****************************************************
-
-// Make balance available to all templates automatically
+// Make balance & user globally available to templates
 app.use((req, res, next) => {
   if (req.session.user) {
-    res.locals.balance = req.session.user.balance ?? 0;
+    res.locals.user = req.session.user;
+    res.locals.balance =
+      typeof req.session.user.balance === 'number'
+        ? req.session.user.balance
+        : 0;
   } else {
+    res.locals.user = null;
     res.locals.balance = null;
   }
   next();
 });
 
-// LOGIN PAGE
-app.get('/', (req, res) => {
-  if (req.session.user) return res.redirect('/home');
+// *****************************************************
+// Helper: Background presets
+// *****************************************************
 
-  const backgroundLayers = [
-    "neon-clouds",
-    "caustics",
-    "particles",
-    "glow-ripple",
-    "bloom-overlay",
-    "neon-dots"
+function defaultBackgroundLayers(dim = false) {
+  if (dim) {
+    return [
+      'neon-clouds dim',
+      'caustics softer',
+      'bloom-overlay subtle',
+      'neon-dots',
+    ];
+  }
+  return [
+    'neon-clouds',
+    'caustics',
+    'particles',
+    'glow-ripple',
+    'bloom-overlay',
+    'neon-dots',
   ];
+}
 
+// *****************************************************
+// Section 4 : Auth Routes
+// *****************************************************
+
+function renderLoginPage(res, extra = {}) {
+  const backgroundLayers = defaultBackgroundLayers(false);
   res.render('pages/login', {
     title: 'Login',
     pageClass: 'login-page',
     backgroundLayers,
     titleText: 'BETWISE',
-    subtitleText: 'Flow With The Odds'
+    subtitleText: 'Flow With The Odds',
+    ...extra,
   });
+}
+
+// ROOT → Login
+app.get('/', (req, res) => {
+  if (req.session.user) return res.redirect('/home');
+  return renderLoginPage(res);
 });
 
-// LOGIN HANDLER – CHECKS DATABASE
+app.get('/login', (req, res) => {
+  if (req.session.user) return res.redirect('/home');
+  return renderLoginPage(res);
+});
+
+// LOGIN HANDLER
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  username = typeof username === 'string' ? username.trim() : '';
+  password = typeof password === 'string' ? password.trim() : '';
+
+  if (!username || !password) {
+    return renderLoginPage(res, {
+      error: true,
+      message: 'Invalid username or password.',
+    });
+  }
 
   try {
     const user = await db.oneOrNone(
-      "SELECT user_id, username, password_hash FROM users WHERE username = $1",
+      'SELECT user_id, username, password_hash FROM users WHERE username = $1',
       [username]
     );
 
     if (!user) {
-      return res.render('pages/login', {
+      return renderLoginPage(res, {
         error: true,
-        message: "Invalid username or password."
+        message: 'Invalid username or password.',
       });
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
-      return res.render('pages/login', {
+      return renderLoginPage(res, {
         error: true,
-        message: "Invalid username or password."
+        message: 'Invalid username or password.',
       });
     }
 
     req.session.user = {
       user_id: user.user_id,
-      username: user.username
+      username: user.username,
+      balance: typeof req.session.user?.balance === 'number'
+        ? req.session.user.balance
+        : 1000,
     };
 
     return res.redirect('/transition');
-
   } catch (err) {
-    console.error("Login error:", err);
-    res.render('pages/login', {
+    console.error('Login error:', err);
+    return renderLoginPage(res, {
       error: true,
-      message: "Something went wrong."
+      message: 'Something went wrong.',
     });
   }
 });
@@ -150,43 +193,45 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
 
-  const backgroundLayers = [
-    "neon-clouds",
-    "caustics",
-    "particles",
-    "glow-ripple",
-    "bloom-overlay",
-    "neon-dots"
-  ];
+  const backgroundLayers = defaultBackgroundLayers(false);
 
   res.render('pages/register', {
     title: 'Register',
     pageClass: 'register-page',
-    backgroundLayers
+    backgroundLayers,
   });
 });
 
-// REGISTER HANDLER – INSERT USER INTO DATABASE
+// REGISTER HANDLER
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  username = typeof username === 'string' ? username.trim() : '';
+  password = typeof password === 'string' ? password.trim() : '';
 
   if (!username || !password) {
     return res.render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      backgroundLayers: defaultBackgroundLayers(false),
       error: true,
-      message: "All fields required."
+      message: 'All fields required.',
     });
   }
 
   try {
     const existing = await db.oneOrNone(
-      "SELECT user_id FROM users WHERE username = $1",
+      'SELECT user_id FROM users WHERE username = $1',
       [username]
     );
 
     if (existing) {
       return res.render('pages/register', {
+        title: 'Register',
+        pageClass: 'register-page',
+        backgroundLayers: defaultBackgroundLayers(false),
         error: true,
-        message: "Username already taken."
+        message: 'Username already taken.',
       });
     }
 
@@ -201,16 +246,19 @@ app.post('/register', async (req, res) => {
 
     req.session.user = {
       user_id: user.user_id,
-      username: user.username
+      username: user.username,
+      balance: 1000,
     };
 
-    res.redirect('/transition');
-
+    return res.redirect('/transition');
   } catch (err) {
-    console.error("Registration error:", err);
-    res.render('pages/register', {
+    console.error('Registration error:', err);
+    return res.render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      backgroundLayers: defaultBackgroundLayers(false),
       error: true,
-      message: "Something went wrong."
+      message: 'Something went wrong.',
     });
   }
 });
@@ -218,10 +266,10 @@ app.post('/register', async (req, res) => {
 // TRANSITION PAGE
 app.get('/transition', requireAuth, (req, res) => {
   const backgroundLayers = [
-    "neon-clouds",
-    "caustics",
-    "bloom-overlay",
-    "neon-dots"
+    'neon-clouds',
+    'caustics',
+    'bloom-overlay',
+    'neon-dots',
   ];
 
   res.render('pages/transition', {
@@ -229,75 +277,75 @@ app.get('/transition', requireAuth, (req, res) => {
     pageClass: 'transition-page',
     siteName: 'BETWISE',
     backgroundLayers,
-    user: req.session.user
+    user: req.session.user,
   });
 });
+
+// *****************************************************
+// Section 5 : Main Pages
+// *****************************************************
 
 // HOME PAGE
 app.get('/home', requireAuth, (req, res) => {
   const games = [
-    { name: "Slots", description: "Spin the reels and test your luck!", tag: "Classic", route: "/slots" },
-    { name: "Blackjack", description: "Beat the dealer and hit 21.", tag: "Card Game", route: "/blackjack" },
-    { name: "Mines", description: "Choose wisely and avoid the bombs!", tag: "Strategy", route: "/mines" }
+    { name: 'Slots', description: 'Spin the reels and test your luck!', tag: 'Classic', route: '/slots' },
+    { name: 'Blackjack', description: 'Beat the dealer and hit 21.', tag: 'Card Game', route: '/blackjack' },
+    { name: 'Mines', description: 'Choose wisely and avoid the bombs!', tag: 'Strategy', route: '/mines' },
   ];
+
+  const backgroundLayers = defaultBackgroundLayers(true);
 
   res.render('pages/home', {
     title: 'Play',
     pageClass: 'home-page ultra-ink',
     user: req.session.user,
     siteName: 'BETWISE',
-    games
+    games,
+    backgroundLayers,
   });
 });
 
-// GAME ROUTES
+// BLACKJACK
 app.get('/blackjack', requireAuth, (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
     pageClass: 'blackjack-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
-    user: req.session.user
+    user: req.session.user,
   });
 });
 
+// SLOTS
 app.get('/slots', requireAuth, (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
-  if (req.session.user.balance == null) req.session.user.balance = 0;
+  if (typeof req.session.user.balance !== 'number') {
+    req.session.user.balance = 1000;
+  }
 
   res.render('pages/slots', {
     title: 'Betwise — Slots',
     pageClass: 'slots-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     user: req.session.user,
     siteName: 'BETWISE',
-    balance: req.session.user.balance
+    balance: req.session.user.balance,
   });
 });
 
+// SLOTS SPIN API
 app.post('/slots/spin', requireAuth, (req, res) => {
   const bet = Number(req.body.bet);
 
   if (!bet || bet <= 0) {
-    return res.status(400).json({ error: "Invalid bet amount." });
+    return res.status(400).json({ error: 'Invalid bet amount.' });
   }
 
-  if (req.session.user.balance == null) req.session.user.balance = 1000;
+  if (typeof req.session.user.balance !== 'number') {
+    req.session.user.balance = 1000;
+  }
+
   if (bet > req.session.user.balance) {
-    return res.status(400).json({ error: "Insufficient balance." });
+    return res.status(400).json({ error: 'Insufficient balance.' });
   }
 
   const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
@@ -305,7 +353,7 @@ app.post('/slots/spin', requireAuth, (req, res) => {
   const reels = [
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
+    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
   ];
 
   const [a, b, c] = reels;
@@ -322,111 +370,105 @@ app.post('/slots/spin', requireAuth, (req, res) => {
   res.json({
     reels,
     payout,
-    newBalance: req.session.user.balance
+    newBalance: req.session.user.balance,
   });
 });
 
 // MINES
 app.get('/mines', requireAuth, (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
   res.render('pages/mines', {
     title: 'Betwise — Mines',
     pageClass: 'mines-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
-    user: req.session.user
+    user: req.session.user,
   });
 });
 
-// LEADERBOARD
+// LEADERBOARD (placeholder)
 app.get('/leaderboard', requireAuth, async (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
-  // Temporary mock data (replace with DB when ready)
   const rawLeaderboard = [
-    { rank: 1, username: "fish", score: 12500, status: "Legend" },
-    { rank: 2, username: "this fish", score: 11340, status: "Diamond" },
-    { rank: 3, username: "that fish", score: 9980, status: "Platinum" },
-    { rank: 4, username: "other fish", score: 8740, status: "Gold" },
-    { rank: 5, username: "yay fish!", score: 8210, status: "Gold" }
+    { rank: 1, username: 'fish', balance: 12500, status: 'Legend' },
+    { rank: 2, username: 'this fish', balance: 11340, status: 'Diamond' },
+    { rank: 3, username: 'that fish', balance: 9980, status: 'Platinum' },
+    { rank: 4, username: 'other fish', balance: 8740, status: 'Gold' },
+    { rank: 5, username: 'yay fish!', balance: 8210, status: 'Gold' },
   ];
 
-  // Highest score defines 100%
-  const maxScore = Math.max(...rawLeaderboard.map(p => p.score));
+  const maxScore = Math.max(...rawLeaderboard.map(p => p.balance));
 
-  // Calculate progress %
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.score / maxScore) * 100)
+    progress: Math.round((p.balance / maxScore) * 100),
   }));
 
   res.render('pages/leaderboard', {
     title: 'Betwise — Leaderboard',
     pageClass: 'leaderboard-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
     user: req.session.user,
-    leaderboard
+    leaderboard,
   });
 });
 
-// WALLET
+// WALLET (placeholder)
 app.get('/wallet', requireAuth, async (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
-  // Sample data
   let transactions = [
-    { type: "Deposit", amount: 250, date: "2025-01-12" },
-    { type: "Withdrawal", amount: -100, date: "2025-01-10" },
-    { type: "Game Win", amount: 450, date: "2025-01-05" },
-    { type: "Slot Spin", amount: -50, date: "2025-01-03" }
+    { type: 'Deposit', amount: 250, date: '2025-01-12' },
+    { type: 'Withdrawal', amount: -100, date: '2025-01-10' },
+    { type: 'Game Win', amount: 450, date: '2025-01-05' },
+    { type: 'Slot Spin', amount: -50, date: '2025-01-03' },
   ];
 
-  // Add safe comparison value
   transactions = transactions.map(t => ({
     ...t,
-    amountPositive: t.amount > 0
+    amountPositive: t.amount > 0,
   }));
 
   res.render('pages/wallet', {
     title: 'Betwise — Wallet',
     pageClass: 'wallet-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
     user: req.session.user,
     balance: req.session.user.balance,
-    transactions
+    transactions,
+  });
+});
+
+// PROFILE (view-only)
+app.get('/profile', requireAuth, (req, res) => {
+  const user = req.session.user;
+
+  const profileUser = {
+    username: user.username,
+    balance: typeof user.balance === 'number' ? user.balance : 0,
+  };
+
+  res.render('pages/profile', {
+    title: 'Profile',
+    pageClass: 'profile-page ultra-ink',
+    backgroundLayers: defaultBackgroundLayers(true),
+    user: profileUser,
   });
 });
 
 // LOGOUT
-app.get('/logout', (req, res) => {
+function handleLogout(req, res) {
   req.session.destroy(() => res.redirect('/'));
-});
+}
 
-// ================= START SERVER & EXPORT FOR TESTS ==================
+app.get('/logout', handleLogout);
+app.post('/logout', handleLogout);
+
+// *****************************************************
+// Start Server
+// *****************************************************
+
 const PORT = process.env.PORT || 3000;
-
-// Start server and log a clickable link
 const server = app.listen(PORT, () => {
   console.log(`Betwise server running at http://localhost:${PORT}`);
 });
 
-// Export the server instance for tests (chai-http, etc.)
 module.exports = server;
