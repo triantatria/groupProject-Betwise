@@ -121,7 +121,8 @@ function renderLoginPage(res, extra = {}) {
     backgroundLayers,
     titleText: 'BETWISE',
     subtitleText: 'Flow With The Odds',
-    ...extra,
+    hideFooter: true,
+    ...extra
   });
 }
 
@@ -198,7 +199,8 @@ app.get('/register', (req, res) => {
   res.render('pages/register', {
     title: 'Register',
     pageClass: 'register-page',
-    backgroundLayers,
+    hideFooter: true,
+    backgroundLayers
   });
 });
 
