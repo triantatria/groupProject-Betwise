@@ -237,20 +237,19 @@ app.post('/register', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = await db.one(
+    await db.one(
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2)
        RETURNING user_id, username`,
       [username, hashed]
     );
 
-    req.session.user = {
-      user_id: user.user_id,
-      username: user.username,
-      balance: 1000,
-    };
+    // 🎉 NO auto-login — redirect user back to login
+    return renderLoginPage(res, {
+      success: true,
+      message: 'Account created. Please log in.',
+    });
 
-    return res.redirect('/transition');
   } catch (err) {
     console.error('Registration error:', err);
     return res.render('pages/register', {
@@ -277,7 +276,8 @@ app.get('/transition', requireAuth, (req, res) => {
     pageClass: 'transition-page',
     siteName: 'BETWISE',
     backgroundLayers,
-    user: req.session.user,
+    hideFooter: true, 
+    user: req.session.user
   });
 });
 
