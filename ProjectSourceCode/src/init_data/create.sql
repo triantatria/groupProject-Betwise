@@ -5,7 +5,11 @@ CREATE TABLE IF NOT EXISTS users (
     user_id      BIGSERIAL PRIMARY KEY,
     username     VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        balance      BIGINT NOT NULL DEFAULT 1000 CHECK (balance >= 0),
+    --wins        INT NOT NULL DEFAULT 0 CHECK (wins >= 0),
+    daily_added_credits INT NOT NULL DEFAULT 0,
+    last_credit_topup_date DATE
 );
 
 
