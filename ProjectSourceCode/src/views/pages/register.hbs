@@ -1,36 +1,37 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
+<div class="bg-layer neon-clouds"></div>
+<div class="bg-layer caustics"></div>
+<div class="bg-layer particles"></div>
+<div class="bg-layer glow-ripple"></div>
+<div class="bg-layer bloom-overlay"></div>
+<div class="bg-layer neon-dots"></div>
 
 <div class="center-stage login-entry">
-  <h1 class="logo-title">BETWISE</h1>
-  <p class="bw-slogan">Flow With The Odds</p>
+  <h1 class="logo-title stay">BETWISE</h1>
+  <p class="bw-slogan stay">Flow With The Odds</p>
 
   <div class="login-center">
     {{#if error}}
-      <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">
-        {{message}}
-      </div>
+      <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">{{message}}</div>
     {{/if}}
 
-    <form class="login-form register-form" action="/register" method="post">
+    <form id="registerForm" class="register-form" action="/register" method="post">
       <div class="input-group">
         <label for="username">Username</label>
-        <input id="username" name="username" type="text"
-               placeholder="Enter your username" required />
+        <input id="username" name="username" type="text" placeholder="Enter your username" required />
       </div>
 
       <div class="input-group">
         <label for="password">Password</label>
-        <input id="password" name="password" type="password"
-               placeholder="Create a password" required />
+        <input id="password" name="password" type="password" placeholder="Enter your password" required
+        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+        title="At least 8 characters, with uppercase, lowercase, a number, and a symbol." />
       </div>
 
-      <button type="submit" class="enter-button">Sign up</button>
+      <button type="submit" class="enter-button">Register</button>
     </form>
 
     <p class="login-footer-text">
-      Already have an account? <a href="/">Login</a>
+      Have an account? <a href="/login">Login</a>
     </p>
   </div>
 </div>
