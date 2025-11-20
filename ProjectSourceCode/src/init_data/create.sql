@@ -37,3 +37,12 @@ CREATE TABLE IF NOT EXISTS slots_leaderboard(
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Log all balance changes (wins/losses + wallet adds)
+CREATE TABLE IF NOT EXISTS transactions (
+  transaction_id BIGSERIAL PRIMARY KEY,
+  user_id        BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  type           VARCHAR(40) NOT NULL,   -- 'wallet_add', 'slots', 'blackjack', 'mines'
+  amount         BIGINT NOT NULL,        -- + = credit, - = debit (net change)
+  description    TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
