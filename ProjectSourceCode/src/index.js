@@ -71,20 +71,56 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Human readable type for wallet display
+function friendlyType(code) {
+  switch (code) {
+    case 'wallet_add': return 'Add Credits';
+    case 'slots': return 'Slots Result';
+    case 'blackjack': return 'Blackjack Result';
+    case 'mines': return 'Mines Result';
+    default: return code;
+  }
+}
+
+// Load and format recent transactions for a user
+async function getUserTransactions(userId) {
+  const rows = await db.any(
+    `SELECT type, amount, created_at
+     FROM transactions
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT 20`,
+    [userId]
+  );
+
+  return rows.map(row => {
+    const amt = Number(row.amount);
+    return {
+      type: friendlyType(row.type),
+      amount: Math.abs(amt),
+      amountPositive: amt > 0,
+      date: row.created_at.toISOString().slice(0, 10) // YYYY-MM-DD
+    };
+  });
+}
+
 // Make balance & user globally available to templates
 app.use((req, res, next) => {
   if (req.session.user) {
+    // Normalize balance to a number once per request
+    const n = Number(req.session.user.balance);
+    const safeBalance = Number.isFinite(n) ? n : 0;
+
+    req.session.user.balance = safeBalance;   // keep session consistent
     res.locals.user = req.session.user;
-    res.locals.balance =
-      typeof req.session.user.balance === 'number'
-        ? req.session.user.balance
-        : 0;
+    res.locals.balance = safeBalance;         // used by nav.hbs {{balance}}
   } else {
     res.locals.user = null;
     res.locals.balance = null;
   }
   next();
 });
+
 
 // *****************************************************
 // Helper: Background presets
@@ -153,7 +189,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await db.oneOrNone(
-      'SELECT user_id, username, password_hash FROM users WHERE username = $1',
+      'SELECT user_id, username, password_hash, balance FROM users WHERE username = $1',
       [username]
     );
 
@@ -175,9 +211,7 @@ app.post('/login', async (req, res) => {
     req.session.user = {
       user_id: user.user_id,
       username: user.username,
-      balance: typeof req.session.user?.balance === 'number'
-        ? req.session.user.balance
-        : 1000,
+      balance: user.balance || 0,
     };
 
     return res.redirect('/transition');
@@ -308,6 +342,29 @@ app.get('/home', requireAuth, (req, res) => {
   });
 });
 
+//ransaction helper: record a balance change and log it
+async function recordTransaction(userId, deltaAmount, type, description = '') {
+  return db.tx(async t => {
+    const user = await t.one(
+      `UPDATE users
+       SET balance = balance + $1
+       WHERE user_id = $2
+       RETURNING user_id, username, balance`,
+      [deltaAmount, userId]
+    );
+
+    await t.none(
+      `INSERT INTO transactions (user_id, type, amount, description)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, type, deltaAmount, description]
+    );
+
+    return user;
+  });
+}
+
+
+
 // BLACKJACK
 app.get('/blackjack', requireAuth, (req, res) => {
   res.render('pages/blackjack', {
@@ -388,6 +445,104 @@ app.get('/mines', requireAuth, (req, res) => {
   });
 });
 
+//Mines Game Logic (client-side JS)
+app.post('/mines/start', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  let bet = Number(req.body.bet);
+
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: 'Invalid bet amount.' });
+  }
+
+  try {
+    // Ensure we have up-to-date balance from DB
+    const freshUser = await db.one(
+      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      [user.user_id]
+    );
+
+    if (bet > freshUser.balance) {
+      return res.status(400).json({ error: 'Insufficient balance.' });
+    }
+
+    // delta is negative (bet is taken from balance)
+    const updatedUser = await recordTransaction(
+      freshUser.user_id,
+      -bet,
+      'Mines Bet',
+      `Started a Mines round with bet ${bet}`
+    );
+
+    // update session
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Mines start error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+app.post('/mines/cashout', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const { payout, resultType } = req.body;
+
+  const numericPayout = Number(payout);
+
+  if (Number.isNaN(numericPayout) || numericPayout < 0) {
+    return res.status(400).json({ error: 'Invalid payout.' });
+  }
+
+  let type;
+  let desc;
+
+  if (numericPayout === 0 || resultType === 'loss') {
+    type = 'Mines Loss';
+    desc = 'Mines round ended with no payout';
+  } else if (resultType === 'win') {
+    type = 'Mines Win';
+    desc = `Mines full clear win for +${numericPayout} credits`;
+  } else {
+    // default to cashout if positive payout but not flagged as win
+    type = 'Mines Cashout';
+    desc = `Mines cashout for +${numericPayout} credits`;
+  }
+
+  try {
+    let updatedUser;
+
+    if (numericPayout > 0) {
+      updatedUser = await recordTransaction(
+        user.user_id,
+        numericPayout,
+        type,
+        desc
+      );
+    } else {
+      // no balance change for loss in this route (bet was already taken at /mines/start)
+      updatedUser = await db.one(
+        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        [user.user_id]
+      );
+    }
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Mines cashout error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+
+
 // LEADERBOARD (placeholder)
 app.get('/leaderboard', requireAuth, async (req, res) => {
   const rawLeaderboard = [
@@ -415,29 +570,38 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
   });
 });
 
-// WALLET (placeholder)
+// WALLET
 app.get('/wallet', requireAuth, async (req, res) => {
-  let transactions = [
-    { type: 'Deposit', amount: 250, date: '2025-01-12' },
-    { type: 'Withdrawal', amount: -100, date: '2025-01-10' },
-    { type: 'Game Win', amount: 450, date: '2025-01-05' },
-    { type: 'Slot Spin', amount: -50, date: '2025-01-03' },
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
   ];
 
-  transactions = transactions.map(t => ({
-    ...t,
-    amountPositive: t.amount > 0,
-  }));
+  try {
+    // Refresh balance from DB
+    const row = await db.one(
+      'SELECT balance FROM users WHERE user_id = $1',
+      [req.session.user.user_id]
+    );
+    req.session.user.balance = Number(row.balance);
 
-  res.render('pages/wallet', {
-    title: 'Betwise — Wallet',
-    pageClass: 'wallet-page ultra-ink',
-    backgroundLayers: defaultBackgroundLayers(true),
-    siteName: 'BETWISE',
-    user: req.session.user,
-    balance: req.session.user.balance,
-    transactions,
-  });
+    // Load recent transactions for this user
+    const transactions = await getUserTransactions(req.session.user.user_id);
+    res.render('pages/wallet', {
+      title: 'Betwise — Wallet',
+      pageClass: 'wallet-page ultra-ink',
+      backgroundLayers,
+      siteName: 'BETWISE',
+      user: req.session.user,
+      balance: req.session.user.balance,
+      transactions
+    });
+  } catch (err) {
+    console.error('Error loading wallet:', err);
+    res.status(500).send('Server error');
+  }
 });
 
 // PROFILE (view-only)
