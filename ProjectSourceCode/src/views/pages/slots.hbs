@@ -7,6 +7,8 @@
 <main class="slots-container fade-in">
   <h2 class="section-title soft-glow">Slots</h2>
 
+  <p id="slotBalance" class="slot-balance">Balance: ${{balance}}</p>
+
   {{> slotRules }}
 
   <div class="slot-machine glass-card deep">
@@ -19,7 +21,7 @@
     <div class="slot-controls">
       <div class="bet-wrap">
         <label>Bet</label>
-        <input type="number" id="slotBet" class="bet-input">
+        <input type="number" id="slotBet" class="bet-input" min="1" step="1">
       </div>
       <button class="slot-spin-btn mono-neon" id="slotSpin">SPIN</button>
     </div>
@@ -28,5 +30,4 @@
   </div>
 </main>
 
-<!-- Add your JS here -->
 <script src="/resources/js/slots.js"></script>
