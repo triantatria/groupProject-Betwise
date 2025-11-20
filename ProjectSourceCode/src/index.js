@@ -122,6 +122,7 @@ function renderLoginPage(res, extra = {}) {
     titleText: 'BETWISE',
     subtitleText: 'Flow With The Odds',
     ...extra,
+    hideFooter: true
   });
 }
 
@@ -199,6 +200,7 @@ app.get('/register', (req, res) => {
     title: 'Register',
     pageClass: 'register-page',
     backgroundLayers,
+    hideFooter: true   
   });
 });
 
@@ -278,6 +280,7 @@ app.get('/transition', requireAuth, (req, res) => {
     siteName: 'BETWISE',
     backgroundLayers,
     user: req.session.user,
+    hideFooter: true   
   });
 });
 
@@ -450,9 +453,10 @@ app.get('/profile', requireAuth, (req, res) => {
     title: 'Profile',
     pageClass: 'profile-page ultra-ink',
     backgroundLayers: defaultBackgroundLayers(true),
-    user: profileUser,
+    user: profileUser,   
   });
 });
+
 
 // LOGOUT
 function handleLogout(req, res) {

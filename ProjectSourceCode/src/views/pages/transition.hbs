@@ -1,12 +1,21 @@
 <div class="transition-page">
-
-  {{#each backgroundLayers}}
-    <div class="bg-layer {{this}}"></div>
-  {{/each}}
+  <div class="bg-layer neon-clouds"></div>
+  <div class="bg-layer caustics"></div>
+  <div class="bg-layer bloom-overlay"></div>
+  <div class="bg-layer neon-dots"></div>
 
   <div class="transition-center">
-    <h1 class="transition-logo">{{titleText}}</h1>
-    <p class="transition-sub">{{subtitleText}}</p>
+    <h1 class="transition-logo">BETWISE</h1>
+    <p class="transition-sub">Preparing your experience...</p>
   </div>
-
 </div>
+
+<script>
+  setTimeout(() => {
+    document.body.classList.add('fade-out');
+  }, 2500);
+
+  setTimeout(() => {
+    window.location.href = "/home";
+  }, 5000);
+</script>
