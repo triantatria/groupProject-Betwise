@@ -12,6 +12,8 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
+const DAILY_CREDIT_LIMIT = 5000; // total credits user can add per day
+
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -69,6 +71,40 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Human readable type for wallet display
+function friendlyType(code) {
+  switch (code) {
+    case 'wallet_add': return 'Add Credits';
+    case 'slots': return 'Slots Result';
+    case 'blackjack': return 'Blackjack Result';
+    case 'mines': return 'Mines Result';
+    default: return code;
+  }
+}
+
+// Load and format recent transactions for a user
+async function getUserTransactions(userId) {
+  const rows = await db.any(
+    `SELECT type, amount, created_at
+     FROM transactions
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT 20`,
+    [userId]
+  );
+
+  return rows.map(row => {
+    const amt = Number(row.amount);
+    return {
+      type: friendlyType(row.type),
+      amount: Math.abs(amt),
+      amountPositive: amt > 0,
+      date: row.created_at.toISOString().slice(0, 10) // YYYY-MM-DD
+    };
+  });
+}
+
+
 // *****************************************************
 // <!-- Section 4 : Routes -->
 // *****************************************************
@@ -111,7 +147,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await db.oneOrNone(
-      "SELECT user_id, username, password_hash FROM users WHERE username = $1",
+      "SELECT user_id, username, password_hash, balance, wins FROM users WHERE username = $1",
       [username]
     );
 
@@ -132,7 +168,9 @@ app.post('/login', async (req, res) => {
 
     req.session.user = {
       user_id: user.user_id,
-      username: user.username
+      username: user.username,
+      balance: user.balance,
+      wins: user.wins
     };
 
     return res.redirect('/transition');
@@ -195,13 +233,15 @@ app.post('/register', async (req, res) => {
     const user = await db.one(
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2)
-       RETURNING user_id, username`,
+       RETURNING user_id, username, balance, wins`,
       [username, hashed]
     );
 
     req.session.user = {
       user_id: user.user_id,
-      username: user.username
+      username: user.username,
+      balance: user.balance,
+      wins: user.wins
     };
 
     res.redirect('/transition');
@@ -390,30 +430,141 @@ app.get('/wallet', requireAuth, async (req, res) => {
     "neon-dots"
   ];
 
-  // Sample data
-  let transactions = [
-    { type: "Deposit", amount: 250, date: "2025-01-12" },
-    { type: "Withdrawal", amount: -100, date: "2025-01-10" },
-    { type: "Game Win", amount: 450, date: "2025-01-05" },
-    { type: "Slot Spin", amount: -50, date: "2025-01-03" }
+  try {
+    // Refresh balance from DB
+    const row = await db.one(
+      'SELECT balance FROM users WHERE user_id = $1',
+      [req.session.user.user_id]
+    );
+    req.session.user.balance = Number(row.balance);
+
+    // Load recent transactions for this user
+    const transactions = await getUserTransactions(req.session.user.user_id);
+
+    res.render('pages/wallet', {
+      title: 'Betwise — Wallet',
+      pageClass: 'wallet-page ultra-ink',
+      backgroundLayers,
+      siteName: 'BETWISE',
+      user: req.session.user,
+      balance: req.session.user.balance,
+      transactions
+    });
+  } catch (err) {
+    console.error('Error loading wallet:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+
+// ADD CREDITS HANDLER WITH DAILY LIMIT (Wallet Page)
+app.post('/wallet/add-credits', requireAuth, async (req, res) => {
+  const backgroundLayers = [
+    "neon-clouds dim",
+    "caustics softer",
+    "bloom-overlay subtle",
+    "neon-dots"
   ];
 
-  // Add safe comparison value
-  transactions = transactions.map(t => ({
-    ...t,
-    amountPositive: t.amount > 0
-  }));
+  const rawAmount = req.body.amount;
+  const amount = Number(rawAmount);
 
-  res.render('pages/wallet', {
-    title: 'Betwise — Wallet',
-    pageClass: 'wallet-page ultra-ink',
-    backgroundLayers,
-    siteName: 'BETWISE',
-    user: req.session.user,
-    balance: req.session.user.balance,
-    transactions
-  });
+  // ---- validate: integer between 1 and 1000 ----
+  const isInt = Number.isInteger(amount);
+  if (!isInt || amount < 1 || amount > 1000) {
+    console.log('Invalid wallet input:', rawAmount);
+
+    const balance = req.session.user.balance ?? 0;
+    const transactions = await getUserTransactions(req.session.user.user_id);
+
+    return res.status(400).render('pages/wallet', {
+      title: 'Betwise — Wallet',
+      pageClass: 'wallet-page ultra-ink',
+      backgroundLayers,
+      siteName: 'BETWISE',
+      user: req.session.user,
+      balance,
+      transactions,
+      errorMessage: 'Invalid input'
+    });
+  }
+
+  try {
+    // 1. Get current daily stats
+    const row = await db.one(
+      `SELECT balance, daily_added_credits, last_credit_topup_date
+       FROM users
+       WHERE user_id = $1`,
+      [req.session.user.user_id]
+    );
+
+    const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    const lastDate = row.last_credit_topup_date
+      ? row.last_credit_topup_date.toISOString().slice(0, 10)
+      : null;
+
+    let dailyAdded = row.daily_added_credits;
+
+    // Reset daily counter if last top-up wasn't today
+    if (lastDate !== todayStr) {
+      dailyAdded = 0;
+    }
+
+    const newDailyTotal = dailyAdded + amount;
+
+    // Enforce daily limit
+    if (newDailyTotal > DAILY_CREDIT_LIMIT) {
+      const remaining = Math.max(DAILY_CREDIT_LIMIT - dailyAdded, 0);
+
+      const transactions = await getUserTransactions(req.session.user.user_id);
+
+      const message = remaining > 0
+        ? `Daily limit reached. You can only add ${remaining} more credits today.`
+        : `Daily limit reached. You cannot add more credits today.`;
+
+      return res.status(400).render('pages/wallet', {
+        title: 'Betwise — Wallet',
+        pageClass: 'wallet-page ultra-ink',
+        backgroundLayers,
+        siteName: 'BETWISE',
+        user: req.session.user,
+        balance: row.balance,
+        transactions,
+        errorMessage: message
+      });
+    }
+
+    // 2. Valid: update balance + daily counters + insert transaction in one tx
+    await db.tx(async t => {
+      const newBalance = Number(row.balance) + amount;
+
+      await t.none(
+        `UPDATE users
+         SET balance = $1,
+             daily_added_credits = $2,
+             last_credit_topup_date = $3
+         WHERE user_id = $4`,
+        [newBalance, newDailyTotal, todayStr, req.session.user.user_id]
+      );
+
+      await t.none(
+        `INSERT INTO transactions (user_id, type, amount, description)
+         VALUES ($1, 'wallet_add', $2, $3)`,
+        [req.session.user.user_id, amount, 'Added credits from wallet page']
+      );
+
+      // keep session in sync
+      req.session.user.balance = newBalance;
+    });
+
+    res.redirect('/wallet');
+  } catch (err) {
+    console.error('Error adding credits with daily limit:', err);
+    res.status(500).send('Server error');
+  }
 });
+
+
 
 // LOGOUT
 app.get('/logout', (req, res) => {
