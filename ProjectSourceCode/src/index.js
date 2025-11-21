@@ -339,7 +339,7 @@ app.post('/register', async (req, res) => {
 
     // For JSON (tests): return 302 + JSON body
     if (req.is('application/json')) {
-      return res.status(302).json({ message: 'Success' });
+      return res.status(200).json({ message: 'Success' });
     }
 
     // Normal browser: log in and redirect
