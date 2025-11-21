@@ -1,0 +1,70 @@
+{{#each backgroundLayers}}
+<div class="bg-layer {{this}}"></div>
+{{/each}}
+
+{{> nav }}
+
+<section class="wallet-area fade-in">
+
+  <h2 class="section-title">Your Wallet</h2>
+  {{#if errorMessage}}
+  <p class="wallet-error">{{errorMessage}}</p>
+  {{/if}}
+
+  <div class="wallet-balance glass-panel">
+    <p class="balance-label">Current Balance</p>
+    <h1 class="balance-amount">${{balance}}</h1>
+
+    <div class="wallet-actions">
+      <form action="/wallet/add-credits" method="POST" class="wallet-form">
+        <div class="wallet-input-row">
+          <input id="amount" name="amount" type="number" min="1" max="1000" required placeholder="1 - 1000"
+            class="wallet-input">
+
+          <!-- submits the form -->
+          <button class="wallet-btn" id="depositBtn" type="submit">
+            Deposit
+          </button>
+
+          <!-- placeholder-->
+          <button class="wallet-btn secondary" id="withdrawBtn" type="button">
+            Withdraw
+          </button>
+        </div>
+
+        <p class="wallet-hint">Enter a whole number between 1 and 1000.</p>
+      </form>
+    </div>
+
+
+    <div class="wallet-transactions glass-panel deep">
+      <h3 class="transactions-title">Recent Activity</h3>
+
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {{#each transactions}}
+          <tr>
+            <td>{{type}}</td>
+            <td class="{{#if amountPositive}}positive{{else}}negative{{/if}}">
+              {{#if amountPositive}}+{{/if}}{{amount}}
+            </td>
+            <td>{{date}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+</section>
+
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>

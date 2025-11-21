@@ -1,0 +1,51 @@
+<div class="bg-layer neon-clouds"></div>
+<div class="bg-layer caustics"></div>
+<div class="bg-layer particles"></div>
+<div class="bg-layer glow-ripple"></div>
+<div class="bg-layer bloom-overlay"></div>
+<div class="bg-layer neon-dots"></div>
+
+<nav class="nav-full glass-subtle">
+  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
+  <div class="nav-links">
+    <a href="/profile" class="nav-item">Profile</a>
+    <a href="#" class="nav-item">Leaderboard</a>
+    <a href="#" class="nav-item wallet">Wallet ▾</a>
+  </div>
+</nav>
+<div class="center-stage login-entry" 
+     style="min-height: calc(100vh - 100px); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 20px;">
+  <p class="profile-title">Your Profile</p>
+
+  <div class="login-center"
+     style="
+       display: flex;
+       flex-direction: column;
+       gap: 2rem;
+       width: 90%;
+       max-width: 600px;
+       background: rgba(0,0,0,0.45);
+       padding: 2rem;
+       border-radius: 20px;
+       backdrop-filter: blur(8px);
+       position: relative;
+       z-index: 1;
+     ">
+    <div class="profile-info" style="text-align: left; gap: 1rem; display: flex; flex-direction: column; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 12px;">
+      <p><strong>Username:</strong> {{user.username}}</p>
+      <p><strong>Full Name:</strong> {{user.name}}</p>
+      <p><strong>Email:</strong> {{user.email}}</p>
+      <p><strong>Credits:</strong> {{user.credits}}</p>
+    </div>
+
+    <div class="profile-actions">
+      <form action="/logout" method="post" style="text-align: center;">
+      <button class="enter-button">Logout</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+
+<div id="page-transition" class="page-transition"></div>
