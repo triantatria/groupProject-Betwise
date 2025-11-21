@@ -46,3 +46,4 @@ CREATE TABLE IF NOT EXISTS transactions (
   description    TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
