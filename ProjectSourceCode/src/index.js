@@ -110,6 +110,10 @@ async function getUserTransactions(userId) {
 // *****************************************************
 // <!-- Section 4 : Routes -->
 // *****************************************************
+// Human readable type for wallet display
+function friendlyType(code) {
+  switch (code) {
+    case 'wallet_add': return 'Add Credits';
     case 'Slots Win': return 'Slots Win';
     case 'Slots Spin': return 'Slots Spin';
     case 'Blackjack Bet': return 'Blackjack Bet';
