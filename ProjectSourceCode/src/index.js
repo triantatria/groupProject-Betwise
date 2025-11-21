@@ -1,5 +1,5 @@
 // *****************************************************
-// <!-- Section 1 : Import Dependencies -->
+// Section 1 : Import Dependencies
 // *****************************************************
 
 const express = require('express');
@@ -16,7 +16,7 @@ const DAILY_CREDIT_LIMIT = 5000; // total credits user can add per day
 
 
 // *****************************************************
-// <!-- Section 2 : Connect to DB -->
+// Section 2 : Connect to DB (pg-promise ONLY)
 // *****************************************************
 
 const hbs = handlebars.create({
@@ -46,7 +46,7 @@ db.connect()
   });
 
 // *****************************************************
-// <!-- Section 3 : App Settings -->
+// Section 3 : App Settings
 // *****************************************************
 
 app.engine('hbs', hbs.engine);
@@ -57,6 +57,8 @@ app.use('/resources', express.static(path.join(__dirname, 'resources')));
 app.use('/resources', express.static(path.join(__dirname, '..', 'resources')));
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'dev_secret_key',
@@ -108,78 +110,160 @@ async function getUserTransactions(userId) {
 // *****************************************************
 // <!-- Section 4 : Routes -->
 // *****************************************************
+    case 'Slots Win': return 'Slots Win';
+    case 'Slots Spin': return 'Slots Spin';
+    case 'Blackjack Bet': return 'Blackjack Bet';
+    case 'Blackjack Win': return 'Blackjack Win';
+    case 'Blackjack Loss': return 'Blackjack Loss';
+    case 'Blackjack Push': return 'Blackjack Push';
+    case 'Blackjack Double': return 'Blackjack Double';
+    case 'Mines Bet': return 'Mines Bet';
+    case 'Mines Win': return 'Mines Win';
+    case 'Mines Loss': return 'Mines Loss';
+    case 'Mines Cashout': return 'Mines Cashout';
 
-// Make balance available to all templates automatically
+    default: return code;
+  }
+}
+
+// Load and format recent transactions for a user
+async function getUserTransactions(userId) {
+  const rows = await db.any(
+    `SELECT type, amount, created_at
+     FROM transactions
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT 20`,
+    [userId]
+  );
+
+  return rows.map(row => {
+    const amt = Number(row.amount);
+    return {
+      type: friendlyType(row.type),
+      amount: Math.abs(amt),
+      amountPositive: amt > 0,
+      date: row.created_at.toISOString().slice(0, 10) // YYYY-MM-DD
+    };
+  });
+}
+
+// Make balance & user globally available to templates
 app.use((req, res, next) => {
   if (req.session.user) {
-    res.locals.balance = req.session.user.balance ?? 0;
+    // Normalize balance to a number once per request
+    const n = Number(req.session.user.balance);
+    const safeBalance = Number.isFinite(n) ? n : 0;
+
+    req.session.user.balance = safeBalance;   // keep session consistent
+    res.locals.user = req.session.user;
+    res.locals.balance = safeBalance;         // used by nav.hbs {{balance}}
   } else {
+    res.locals.user = null;
     res.locals.balance = null;
   }
   next();
 });
 
-// LOGIN PAGE
-app.get('/', (req, res) => {
-  if (req.session.user) return res.redirect('/home');
 
-  const backgroundLayers = [
-    "neon-clouds",
-    "caustics",
-    "particles",
-    "glow-ripple",
-    "bloom-overlay",
-    "neon-dots"
+// *****************************************************
+// Helper: Background presets
+// *****************************************************
+
+function defaultBackgroundLayers(dim = false) {
+  if (dim) {
+    return [
+      'neon-clouds dim',
+      'caustics softer',
+      'bloom-overlay subtle',
+      'neon-dots',
+    ];
+  }
+  return [
+    'neon-clouds',
+    'caustics',
+    'particles',
+    'glow-ripple',
+    'bloom-overlay',
+    'neon-dots',
   ];
+}
 
+// *****************************************************
+// Section 4 : Auth Routes
+// *****************************************************
+
+function renderLoginPage(res, extra = {}) {
+  const backgroundLayers = defaultBackgroundLayers(false);
   res.render('pages/login', {
     title: 'Login',
     pageClass: 'login-page',
     backgroundLayers,
     titleText: 'BETWISE',
-    subtitleText: 'Flow With The Odds'
+    subtitleText: 'Flow With The Odds',
+    ...extra,
+    hideFooter: true
   });
+}
+
+// ROOT → Login
+app.get('/', (req, res) => {
+  if (req.session.user) return res.redirect('/home');
+  return renderLoginPage(res);
 });
 
-// LOGIN HANDLER – CHECKS DATABASE
+app.get('/login', (req, res) => {
+  if (req.session.user) return res.redirect('/home');
+  return renderLoginPage(res);
+});
+
+// LOGIN HANDLER
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  username = typeof username === 'string' ? username.trim() : '';
+  password = typeof password === 'string' ? password.trim() : '';
+
+  if (!username || !password) {
+    return renderLoginPage(res, {
+      error: true,
+      message: 'Invalid username or password.',
+    });
+  }
 
   try {
     const user = await db.oneOrNone(
-      "SELECT user_id, username, password_hash, balance, wins FROM users WHERE username = $1",
+      'SELECT user_id, username, password_hash, balance FROM users WHERE username = $1',
       [username]
     );
 
     if (!user) {
-      return res.render('pages/login', {
+      return renderLoginPage(res, {
         error: true,
-        message: "Invalid username or password."
+        message: 'Invalid username or password.',
       });
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
-      return res.render('pages/login', {
+      return renderLoginPage(res, {
         error: true,
-        message: "Invalid username or password."
+        message: 'Invalid username or password.',
       });
     }
 
     req.session.user = {
       user_id: user.user_id,
       username: user.username,
-      balance: user.balance,
-      wins: user.wins
+      balance: user.balance || 0,
     };
 
     return res.redirect('/transition');
-
   } catch (err) {
-    console.error("Login error:", err);
-    res.render('pages/login', {
+    console.error('Login error:', err);
+    return renderLoginPage(res, {
       error: true,
-      message: "Something went wrong."
+      message: 'Something went wrong.',
     });
   }
 });
@@ -188,43 +272,46 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/home');
 
-  const backgroundLayers = [
-    "neon-clouds",
-    "caustics",
-    "particles",
-    "glow-ripple",
-    "bloom-overlay",
-    "neon-dots"
-  ];
+  const backgroundLayers = defaultBackgroundLayers(false);
 
   res.render('pages/register', {
     title: 'Register',
     pageClass: 'register-page',
-    backgroundLayers
+    backgroundLayers,
+    hideFooter: true
   });
 });
 
-// REGISTER HANDLER – INSERT USER INTO DATABASE
+// REGISTER HANDLER
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  username = typeof username === 'string' ? username.trim() : '';
+  password = typeof password === 'string' ? password.trim() : '';
 
   if (!username || !password) {
     return res.render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      backgroundLayers: defaultBackgroundLayers(false),
       error: true,
-      message: "All fields required."
+      message: 'All fields required.',
     });
   }
 
   try {
     const existing = await db.oneOrNone(
-      "SELECT user_id FROM users WHERE username = $1",
+      'SELECT user_id FROM users WHERE username = $1',
       [username]
     );
 
     if (existing) {
       return res.render('pages/register', {
+        title: 'Register',
+        pageClass: 'register-page',
+        backgroundLayers: defaultBackgroundLayers(false),
         error: true,
-        message: "Username already taken."
+        message: 'Username already taken.',
       });
     }
 
@@ -241,16 +328,17 @@ app.post('/register', async (req, res) => {
       user_id: user.user_id,
       username: user.username,
       balance: user.balance,
-      wins: user.wins
     };
 
-    res.redirect('/transition');
-
+    return res.redirect('/transition');
   } catch (err) {
-    console.error("Registration error:", err);
-    res.render('pages/register', {
+    console.error('Registration error:', err);
+    return res.render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      backgroundLayers: defaultBackgroundLayers(false),
       error: true,
-      message: "Something went wrong."
+      message: 'Something went wrong.',
     });
   }
 });
@@ -258,10 +346,10 @@ app.post('/register', async (req, res) => {
 // TRANSITION PAGE
 app.get('/transition', requireAuth, (req, res) => {
   const backgroundLayers = [
-    "neon-clouds",
-    "caustics",
-    "bloom-overlay",
-    "neon-dots"
+    'neon-clouds',
+    'caustics',
+    'bloom-overlay',
+    'neon-dots',
   ];
 
   res.render('pages/transition', {
@@ -269,75 +357,238 @@ app.get('/transition', requireAuth, (req, res) => {
     pageClass: 'transition-page',
     siteName: 'BETWISE',
     backgroundLayers,
-    user: req.session.user
+    user: req.session.user,
+    hideFooter: true
   });
 });
+
+// *****************************************************
+// Section 5 : Main Pages
+// *****************************************************
 
 // HOME PAGE
 app.get('/home', requireAuth, (req, res) => {
   const games = [
-    { name: "Slots", description: "Spin the reels and test your luck!", tag: "Classic", route: "/slots" },
-    { name: "Blackjack", description: "Beat the dealer and hit 21.", tag: "Card Game", route: "/blackjack" },
-    { name: "Mines", description: "Choose wisely and avoid the bombs!", tag: "Strategy", route: "/mines" }
+    { name: 'Slots', description: 'Spin the reels and test your luck!', tag: 'Classic', route: '/slots' },
+    { name: 'Blackjack', description: 'Beat the dealer and hit 21.', tag: 'Card Game', route: '/blackjack' },
+    { name: 'Mines', description: 'Choose wisely and avoid the bombs!', tag: 'Strategy', route: '/mines' },
   ];
+
+  const backgroundLayers = defaultBackgroundLayers(true);
 
   res.render('pages/home', {
     title: 'Play',
     pageClass: 'home-page ultra-ink',
     user: req.session.user,
     siteName: 'BETWISE',
-    games
+    games,
+    backgroundLayers,
   });
 });
 
-// GAME ROUTES
-app.get('/blackjack', requireAuth, (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
+//ransaction helper: record a balance change and log it
+async function recordTransaction(userId, deltaAmount, type, description = '') {
+  return db.tx(async t => {
+    const user = await t.one(
+      `UPDATE users
+       SET balance = balance + $1
+       WHERE user_id = $2
+       RETURNING user_id, username, balance`,
+      [deltaAmount, userId]
+    );
 
+    await t.none(
+      `INSERT INTO transactions (user_id, type, amount, description)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, type, deltaAmount, description]
+    );
+
+    return user;
+  });
+}
+
+
+
+// BLACKJACK
+app.get('/blackjack', requireAuth, (req, res) => {
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
     pageClass: 'blackjack-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
-    user: req.session.user
+    user: req.session.user,
   });
 });
 
-app.get('/slots', requireAuth, (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
+// BLACKJACK: start round – subtract bet and log "Blackjack Bet"
+app.post('/blackjack/start', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const bet = Number(req.body.bet);
 
-  if (req.session.user.balance == null) req.session.user.balance = 0;
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: 'Invalid bet amount.' });
+  }
+
+  try {
+    // fresh balance
+    const freshUser = await db.one(
+      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      [user.user_id]
+    );
+
+    if (bet > freshUser.balance) {
+      return res.status(400).json({ error: 'Insufficient balance.' });
+    }
+
+    // subtract bet
+    const updatedUser = await recordTransaction(
+      freshUser.user_id,
+      -bet,
+      'Blackjack Bet',
+      `Started a Blackjack round with bet ${bet}`
+    );
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Blackjack start error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// BLACKJACK: settle result – add payouts and log Win/Loss/Push
+app.post('/blackjack/settle', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const { netPayout, result } = req.body; // netPayout = credits to ADD back
+  const numeric = Number(netPayout);
+
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return res.status(400).json({ error: 'Invalid net payout.' });
+  }
+
+  let type;
+  let desc;
+
+  if (numeric === 0 && result === 'loss') {
+    type = 'Blackjack Loss';
+    desc = 'Blackjack round lost (no payout)';
+  } else if (result === 'push') {
+    type = 'Blackjack Push';
+    desc = `Blackjack push, returned ${numeric} credits`;
+  } else if (result === 'win') {
+    type = 'Blackjack Win';
+    desc = `Blackjack win for +${numeric} credits`;
+  } else {
+    // fallback
+    type = 'Blackjack Result';
+    desc = `Blackjack result ${result} for +${numeric} credits`;
+  }
+
+  try {
+    let updatedUser;
+
+    if (numeric > 0) {
+      updatedUser = await recordTransaction(
+        user.user_id,
+        numeric,
+        type,
+        desc
+      );
+    } else {
+      // loss: bet already taken in /blackjack/start
+      updatedUser = await db.one(
+        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        [user.user_id]
+      );
+    }
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Blackjack settle error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// BLACKJACK: double down – subtract an extra bet equal to current bet
+app.post('/blackjack/double', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const extraBet = Number(req.body.extraBet);  // usually same as currentBet
+
+  if (!extraBet || extraBet <= 0) {
+    return res.status(400).json({ error: 'Invalid double amount.' });
+  }
+
+  try {
+    // Get latest balance from DB
+    const freshUser = await db.one(
+      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      [user.user_id]
+    );
+
+    if (extraBet > freshUser.balance) {
+      return res.status(400).json({ error: 'Insufficient balance to double.' });
+    }
+
+    // Subtract the extra bet and log a transaction
+    const updatedUser = await recordTransaction(
+      freshUser.user_id,
+      -extraBet,
+      'Blackjack Double',
+      `Blackjack double down for extra bet ${extraBet}`
+    );
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Blackjack double error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+
+// SLOTS
+app.get('/slots', requireAuth, (req, res) => {
+  if (typeof req.session.user.balance !== 'number') {
+    req.session.user.balance = 1000;
+  }
 
   res.render('pages/slots', {
     title: 'Betwise — Slots',
     pageClass: 'slots-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     user: req.session.user,
     siteName: 'BETWISE',
-    balance: req.session.user.balance
+    balance: req.session.user.balance,
   });
 });
 
-app.post('/slots/spin', requireAuth, (req, res) => {
+// SLOTS SPIN API
+app.post('/slots/spin', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
 
   if (!bet || bet <= 0) {
-    return res.status(400).json({ error: "Invalid bet amount." });
+    return res.status(400).json({ error: 'Invalid bet amount.' });
   }
 
-  if (req.session.user.balance == null) req.session.user.balance = 1000;
+  if (typeof req.session.user.balance !== 'number') {
+    req.session.user.balance = 1000;
+  }
+
   if (bet > req.session.user.balance) {
-    return res.status(400).json({ error: "Insufficient balance." });
+    return res.status(400).json({ error: 'Insufficient balance.' });
   }
 
   const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
@@ -345,7 +596,7 @@ app.post('/slots/spin', requireAuth, (req, res) => {
   const reels = [
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
+    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
   ];
 
   const [a, b, c] = reels;
@@ -357,67 +608,158 @@ app.post('/slots/spin', requireAuth, (req, res) => {
     payout = bet * 2;
   }
 
-  req.session.user.balance = req.session.user.balance - bet + payout;
+  const netDelta = -bet + payout; // this is what changed in balance
+
+  // 2) apply delta & log transaction
+  const updatedUser = await recordTransaction(
+    req.session.user.user_id,
+    netDelta,
+    'slots',
+    `Slots spin bet=${bet}, payout=${payout}`
+  );
+
+  req.session.user.balance = updatedUser.balance;
 
   res.json({
     reels,
     payout,
-    newBalance: req.session.user.balance
+    newBalance: req.session.user.balance,
   });
 });
 
 // MINES
 app.get('/mines', requireAuth, (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
   res.render('pages/mines', {
     title: 'Betwise — Mines',
     pageClass: 'mines-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
-    user: req.session.user
+    user: req.session.user,
   });
 });
 
-// LEADERBOARD
+//Mines Game Logic (client-side JS)
+app.post('/mines/start', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  let bet = Number(req.body.bet);
+
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: 'Invalid bet amount.' });
+  }
+
+  try {
+    // Ensure we have up-to-date balance from DB
+    const freshUser = await db.one(
+      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      [user.user_id]
+    );
+
+    if (bet > freshUser.balance) {
+      return res.status(400).json({ error: 'Insufficient balance.' });
+    }
+
+    // delta is negative (bet is taken from balance)
+    const updatedUser = await recordTransaction(
+      freshUser.user_id,
+      -bet,
+      'Mines Bet',
+      `Started a Mines round with bet ${bet}`
+    );
+
+    // update session
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Mines start error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+app.post('/mines/cashout', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const { payout, resultType } = req.body;
+
+  const numericPayout = Number(payout);
+
+  if (Number.isNaN(numericPayout) || numericPayout < 0) {
+    return res.status(400).json({ error: 'Invalid payout.' });
+  }
+
+  let type;
+  let desc;
+
+  if (numericPayout === 0 || resultType === 'loss') {
+    type = 'Mines Loss';
+    desc = 'Mines round ended with no payout';
+  } else if (resultType === 'win') {
+    type = 'Mines Win';
+    desc = `Mines full clear win for +${numericPayout} credits`;
+  } else {
+    // default to cashout if positive payout but not flagged as win
+    type = 'Mines Cashout';
+    desc = `Mines cashout for +${numericPayout} credits`;
+  }
+
+  try {
+    let updatedUser;
+
+    if (numericPayout > 0) {
+      updatedUser = await recordTransaction(
+        user.user_id,
+        numericPayout,
+        type,
+        desc
+      );
+    } else {
+      // no balance change for loss in this route (bet was already taken at /mines/start)
+      updatedUser = await db.one(
+        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        [user.user_id]
+      );
+    }
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Mines cashout error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+
+
+// LEADERBOARD (placeholder)
 app.get('/leaderboard', requireAuth, async (req, res) => {
-  const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
-  ];
-
-  // Temporary mock data (replace with DB when ready)
   const rawLeaderboard = [
-    { rank: 1, username: "fish", score: 12500, status: "Legend" },
-    { rank: 2, username: "this fish", score: 11340, status: "Diamond" },
-    { rank: 3, username: "that fish", score: 9980, status: "Platinum" },
-    { rank: 4, username: "other fish", score: 8740, status: "Gold" },
-    { rank: 5, username: "yay fish!", score: 8210, status: "Gold" }
+    { rank: 1, username: 'fish', balance: 12500, status: 'Legend' },
+    { rank: 2, username: 'this fish', balance: 11340, status: 'Diamond' },
+    { rank: 3, username: 'that fish', balance: 9980, status: 'Platinum' },
+    { rank: 4, username: 'other fish', balance: 8740, status: 'Gold' },
+    { rank: 5, username: 'yay fish!', balance: 8210, status: 'Gold' },
   ];
 
-  // Highest score defines 100%
-  const maxScore = Math.max(...rawLeaderboard.map(p => p.score));
+  const maxScore = Math.max(...rawLeaderboard.map(p => p.balance));
 
-  // Calculate progress %
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.score / maxScore) * 100)
+    progress: Math.round((p.balance / maxScore) * 100),
   }));
 
   res.render('pages/leaderboard', {
     title: 'Betwise — Leaderboard',
     pageClass: 'leaderboard-page ultra-ink',
-    backgroundLayers,
+    backgroundLayers: defaultBackgroundLayers(true),
     siteName: 'BETWISE',
     user: req.session.user,
-    leaderboard
+    leaderboard,
   });
 });
 
@@ -566,18 +908,40 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
 
 
 
-// LOGOUT
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/'));
+
+// PROFILE (view-only)
+app.get('/profile', requireAuth, (req, res) => {
+  const user = req.session.user;
+
+  const profileUser = {
+    username: user.username,
+    balance: typeof user.balance === 'number' ? user.balance : 0,
+  };
+
+  res.render('pages/profile', {
+    title: 'Profile',
+    pageClass: 'profile-page ultra-ink',
+    backgroundLayers: defaultBackgroundLayers(true),
+    user: profileUser,
+  });
 });
 
-// ================= START SERVER & EXPORT FOR TESTS ==================
-const PORT = process.env.PORT || 3000;
 
-// Start server and log a clickable link
+// LOGOUT
+function handleLogout(req, res) {
+  req.session.destroy(() => res.redirect('/'));
+}
+
+app.get('/logout', handleLogout);
+app.post('/logout', handleLogout);
+
+// *****************************************************
+// Start Server
+// *****************************************************
+
+const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`Betwise server running at http://localhost:${PORT}`);
 });
 
-// Export the server instance for tests (chai-http, etc.)
 module.exports = server;

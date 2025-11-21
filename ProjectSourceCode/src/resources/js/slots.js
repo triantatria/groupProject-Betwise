@@ -1,47 +1,42 @@
 document.addEventListener('DOMContentLoaded', () => {
   const spinBtn = document.getElementById('slotSpin');
-  const reelEls = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+  const reelEls = [
+    document.getElementById('reel1'),
+    document.getElementById('reel2'),
+    document.getElementById('reel3'),
+  ];
   const betInput = document.getElementById('slotBet');
   const resultEl = document.getElementById('slotResult');
+  const balanceEl = document.getElementById('slotBalance');
 
-  // symbols array should match server symbols visually
-  const SYMBOLS = ['🍒','🔔','🍋','⭐','7️⃣','💎'];
-
-  function randomSymbol() {
-    return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+  if (!spinBtn || reelEls.some(r => !r) || !betInput || !resultEl || !balanceEl) {
+    return;
   }
 
-  // ---------------- BROWSER BALANCE ----------------
-  if (!localStorage.getItem('balance')) {
-    localStorage.setItem('balance', '1000');
+  function parseBalanceFromText() {
+    const text = balanceEl.textContent || '';
+    const match = text.match(/([\d.]+)/);
+    return match ? parseFloat(match[1]) : 0;
   }
 
-  function getBalance() {
-    return parseFloat(localStorage.getItem('balance'));
-  }
+  let currentBalance = parseBalanceFromText();
 
-  function setBalance(newBalance) {
-    localStorage.setItem('balance', newBalance);
-  }
+  const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
 
-  // Show balance at the top of the page
-  const balanceEl = document.createElement('p');
-  balanceEl.id = 'slotBalance';
-  balanceEl.style.textAlign = 'center';
-  balanceEl.style.fontWeight = 'bold';
-  balanceEl.textContent = `Balance: $${getBalance().toFixed(2)}`;
-  document.querySelector('.slots-container').prepend(balanceEl);
-
-  // ---------------- ANIMATION ----------------
   function startAnimation() {
     return reelEls.map((el, idx) => {
       return setInterval(() => {
-        el.textContent = randomSymbol();
+        const sym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        el.textContent = sym;
       }, 80 + idx * 30);
     });
   }
 
-  // ---------------- SPIN BUTTON ----------------
+  function updateBalanceDisplay(newBalance) {
+    currentBalance = newBalance;
+    balanceEl.textContent = `Balance: $${newBalance}`;
+  }
+
   spinBtn.addEventListener('click', async () => {
     resultEl.textContent = '';
     const bet = parseFloat(betInput.value);
@@ -51,9 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const currentBalance = getBalance();
     if (bet > currentBalance) {
-      resultEl.textContent = `You only have $${currentBalance.toFixed(2)}`;
+      resultEl.textContent = `You only have $${currentBalance}`;
       return;
     }
 
@@ -61,59 +55,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const timers = startAnimation();
 
     try {
-      // Simulate a server spin call
-      const reels = Array.from({ length: 3 }, () => randomSymbol());
+      const response = await fetch('/slots/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bet }),
+      });
 
-      // Calculate payout
-      const [a, b, c] = reels;
-      let payout = 0;
-
-      if (a === b && b === c) {
-        if (a === '💎') payout = bet * 10;
-        else if (a === '🍒') payout = bet * 3;
-        else payout = bet * 2;
-      } else if (a === b || b === c || a === c) {
-        payout = bet * 2;
-      } else {
-        payout = 0;
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        resultEl.textContent = data.error || 'Server error.';
+        return;
       }
 
-      // Stop reels one by one
+      const data = await response.json();
+      const { reels, payout, newBalance } = data;
+
       for (let i = 0; i < reelEls.length; i++) {
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 400));
         clearInterval(timers[i]);
         reelEls[i].textContent = reels[i];
       }
 
-      // Update and display balance
-      const newBalance = currentBalance - bet + payout;
-      setBalance(newBalance);
-      balanceEl.textContent = `Balance: $${newBalance.toFixed(2)}`;
+      updateBalanceDisplay(newBalance);
 
-      if (payout > 0) {
-        resultEl.textContent = `You won $${payout.toFixed(2)}!`;
-      } else {
-        resultEl.textContent = `No win.`;
-      }
-
+      resultEl.textContent = payout > 0
+        ? `You won $${payout}!`
+        : 'No win.';
     } catch (err) {
       console.error(err);
       resultEl.textContent = 'Network or server error.';
     } finally {
+      timers.forEach(t => clearInterval(t));
       spinBtn.disabled = false;
     }
   });
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  const details = document.querySelector(".slot-rules");
+document.addEventListener('DOMContentLoaded', () => {
+  const details = document.querySelector('.slot-rules');
   if (!details) return;
 
-  const summary = details.querySelector(".rules-summary");
+  const summary = details.querySelector('.rules-summary');
   const closedText = summary.dataset.closedText;
   const openText = summary.dataset.openText;
 
-  details.addEventListener("toggle", () => {
+  details.addEventListener('toggle', () => {
     summary.textContent = details.open ? openText : closedText;
   });
 });

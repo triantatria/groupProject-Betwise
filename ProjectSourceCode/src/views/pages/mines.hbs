@@ -1,6 +1,7 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
+<div class="bg-layer neon-clouds dim"></div>
+<div class="bg-layer caustics softer"></div>
+<div class="bg-layer bloom-overlay subtle"></div>
+<div class="bg-layer neon-dots"></div>
 
 {{> nav }}
 
@@ -10,13 +11,17 @@
 
     <div class="bet-panel">
       <label>Bet Amount</label>
-      <input type="number" placeholder="0.00" class="bet-input" />
+      <input id="minesBetInput" type="number" placeholder="0.00" class="bet-input" />
 
       <label>Number of Mines</label>
-      <input type="number" min="1" max="15" value="3" class="bet-input" />
+      <input id="minesCountInput" type="number" min="1" max="15" value="3" class="bet-input" />
 
       <button class="play-btn wide" id="startMinesBtn">Start Game</button>
       <button class="cashout-btn hidden" id="cashoutBtn">Cashout</button>
+    </div>
+
+    <div id="minesStatus" class="mines-status">
+      Enter a bet and click "Start Game" to play.
     </div>
   </div>
 
@@ -24,3 +29,9 @@
     <div id="minesGrid"></div>
   </div>
 </main>
+
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>
+
+<script src="resources/js/mines.js"></script>
