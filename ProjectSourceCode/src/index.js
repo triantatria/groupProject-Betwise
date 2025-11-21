@@ -75,16 +75,17 @@ function requireAuth(req, res, next) {
 function friendlyType(code) {
   switch (code) {
     case 'wallet_add': return 'Add Credits';
-    case 'slots': return 'Slots Result';
-    case 'Blackjack Bet':    return 'Blackjack Bet';
-    case 'Blackjack Win':    return 'Blackjack Win';
-    case 'Blackjack Loss':   return 'Blackjack Loss';
-    case 'Blackjack Push':   return 'Blackjack Push';
+    case 'Slots Win': return 'Slots Win';
+    case 'Slots Spin': return 'Slots Spin';
+    case 'Blackjack Bet': return 'Blackjack Bet';
+    case 'Blackjack Win': return 'Blackjack Win';
+    case 'Blackjack Loss': return 'Blackjack Loss';
+    case 'Blackjack Push': return 'Blackjack Push';
     case 'Blackjack Double': return 'Blackjack Double';
-    case 'Mines Bet':      return 'Mines Bet';
-    case 'Mines Win':      return 'Mines Win';
-    case 'Mines Loss':     return 'Mines Loss';
-    case 'Mines Cashout':  return 'Mines Cashout';
+    case 'Mines Bet': return 'Mines Bet';
+    case 'Mines Win': return 'Mines Win';
+    case 'Mines Loss': return 'Mines Loss';
+    case 'Mines Cashout': return 'Mines Cashout';
 
     default: return code;
   }
@@ -242,7 +243,7 @@ app.get('/register', (req, res) => {
     title: 'Register',
     pageClass: 'register-page',
     backgroundLayers,
-    hideFooter: true   
+    hideFooter: true
   });
 });
 
@@ -322,7 +323,7 @@ app.get('/transition', requireAuth, (req, res) => {
     siteName: 'BETWISE',
     backgroundLayers,
     user: req.session.user,
-    hideFooter: true   
+    hideFooter: true
   });
 });
 
@@ -540,7 +541,7 @@ app.get('/slots', requireAuth, (req, res) => {
 });
 
 // SLOTS SPIN API
-app.post('/slots/spin', requireAuth, (req, res) => {
+app.post('/slots/spin', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
 
   if (!bet || bet <= 0) {
@@ -572,7 +573,17 @@ app.post('/slots/spin', requireAuth, (req, res) => {
     payout = bet * 2;
   }
 
-  req.session.user.balance = req.session.user.balance - bet + payout;
+  const netDelta = -bet + payout; // this is what changed in balance
+
+  // 2) apply delta & log transaction
+  const updatedUser = await recordTransaction(
+    req.session.user.user_id,
+    netDelta,
+    'slots',
+    `Slots spin bet=${bet}, payout=${payout}`
+  );
+
+  req.session.user.balance = updatedUser.balance;
 
   res.json({
     reels,
@@ -764,7 +775,7 @@ app.get('/profile', requireAuth, (req, res) => {
     title: 'Profile',
     pageClass: 'profile-page ultra-ink',
     backgroundLayers: defaultBackgroundLayers(true),
-    user: profileUser,   
+    user: profileUser,
   });
 });
 
