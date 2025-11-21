@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return match ? parseFloat(match[1]) : 0;
   }
 
+  function updateHeaderBalance(newBalance) {
+    const el = document.getElementById('balance');
+    const n = Number(newBalance);
+    if (el && Number.isFinite(n)) {
+      el.textContent = `$${n}`;
+    }
+  }
+
   let currentBalance = parseBalanceFromText();
 
   const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
@@ -77,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       updateBalanceDisplay(newBalance);
+      updateHeaderBalance(newBalance);
 
       resultEl.textContent = payout > 0
         ? `You won $${payout}!`

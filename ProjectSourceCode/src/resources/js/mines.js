@@ -62,7 +62,7 @@ const Mines = (() => {
   async function handleStartClick() {
     const bet = Number(betInputEl?.value ?? 0);
     if (!bet || bet <= 0) {
-      if (statusEl) statusEl.textContent = "Enter a bet amount to start.";
+      if (statusEl) statusEl.textContent = "Enter a valid bet amount to start.";
       return;
     }
 

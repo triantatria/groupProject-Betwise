@@ -76,13 +76,30 @@ function requireAuth(req, res, next) {
 // Human readable type for wallet display
 function friendlyType(code) {
   switch (code) {
-    case 'wallet_add': return 'Add Credits';
-    case 'slots': return 'Slots Result';
-    case 'blackjack': return 'Blackjack Result';
-    case 'mines': return 'Mines Result';
-    default: return code;
+    // Wallet
+    case 'wallet_add':       return 'Add Credits';
+
+    // Slots
+    case 'Slots Spin':       return 'Slots Spin';
+    case 'Slots Win':        return 'Slots Win';
+
+    // Blackjack
+    case 'Blackjack Bet':    return 'Blackjack Bet';
+    case 'Blackjack Win':    return 'Blackjack Win';
+    case 'Blackjack Push':   return 'Blackjack Push (Tie)';
+    case 'Blackjack Double': return 'Blackjack Double Down';
+    case 'Blackjack Result': return 'Blackjack Result';
+
+    // Mines
+    case 'Mines Bet':        return 'Mines Bet';
+    case 'Mines Win':        return 'Mines Win';
+    case 'Mines Cashout':    return 'Mines Cashout';
+
+    default:
+      return code; // fallback: show raw type string
   }
 }
+
 
 // Load and format recent transactions for a user
 async function getUserTransactions(userId) {
@@ -111,46 +128,9 @@ async function getUserTransactions(userId) {
 // <!-- Section 4 : Routes -->
 // *****************************************************
 // Human readable type for wallet display
-function friendlyType(code) {
-  switch (code) {
-    case 'wallet_add': return 'Add Credits';
-    case 'Slots Win': return 'Slots Win';
-    case 'Slots Spin': return 'Slots Spin';
-    case 'Blackjack Bet': return 'Blackjack Bet';
-    case 'Blackjack Win': return 'Blackjack Win';
-    case 'Blackjack Loss': return 'Blackjack Loss';
-    case 'Blackjack Push': return 'Blackjack Push';
-    case 'Blackjack Double': return 'Blackjack Double';
-    case 'Mines Bet': return 'Mines Bet';
-    case 'Mines Win': return 'Mines Win';
-    case 'Mines Loss': return 'Mines Loss';
-    case 'Mines Cashout': return 'Mines Cashout';
 
-    default: return code;
-  }
-}
 
-// Load and format recent transactions for a user
-async function getUserTransactions(userId) {
-  const rows = await db.any(
-    `SELECT type, amount, created_at
-     FROM transactions
-     WHERE user_id = $1
-     ORDER BY created_at DESC
-     LIMIT 20`,
-    [userId]
-  );
 
-  return rows.map(row => {
-    const amt = Number(row.amount);
-    return {
-      type: friendlyType(row.type),
-      amount: Math.abs(amt),
-      amountPositive: amt > 0,
-      date: row.created_at.toISOString().slice(0, 10) // YYYY-MM-DD
-    };
-  });
-}
 
 // Make balance & user globally available to templates
 app.use((req, res, next) => {
@@ -324,7 +304,7 @@ app.post('/register', async (req, res) => {
     const user = await db.one(
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2)
-       RETURNING user_id, username, balance, wins`,
+       RETURNING user_id, username, balance`,
       [username, hashed]
     );
 
