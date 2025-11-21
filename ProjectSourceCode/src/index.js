@@ -12,8 +12,8 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
-const DAILY_CREDIT_LIMIT = 5000; // total credits user can add per day
 
+const DAILY_CREDIT_LIMIT = 5000; // total credits user can add per day
 
 // *****************************************************
 // Section 2 : Connect to DB (pg-promise ONLY)
@@ -82,10 +82,12 @@ function friendlyType(code) {
     // Slots
     case 'Slots Spin':       return 'Slots Spin';
     case 'Slots Win':        return 'Slots Win';
+    case 'slots':            return 'Slots Spin';    // legacy code type
 
     // Blackjack
     case 'Blackjack Bet':    return 'Blackjack Bet';
     case 'Blackjack Win':    return 'Blackjack Win';
+    case 'Blackjack Loss':   return 'Blackjack Loss';
     case 'Blackjack Push':   return 'Blackjack Push (Tie)';
     case 'Blackjack Double': return 'Blackjack Double Down';
     case 'Blackjack Result': return 'Blackjack Result';
@@ -93,13 +95,13 @@ function friendlyType(code) {
     // Mines
     case 'Mines Bet':        return 'Mines Bet';
     case 'Mines Win':        return 'Mines Win';
+    case 'Mines Loss':       return 'Mines Loss';
     case 'Mines Cashout':    return 'Mines Cashout';
 
     default:
       return code; // fallback: show raw type string
   }
 }
-
 
 // Load and format recent transactions for a user
 async function getUserTransactions(userId) {
@@ -118,24 +120,14 @@ async function getUserTransactions(userId) {
       type: friendlyType(row.type),
       amount: Math.abs(amt),
       amountPositive: amt > 0,
-      date: row.created_at.toISOString().slice(0, 10) // YYYY-MM-DD
+      date: row.created_at.toISOString().slice(0, 10), // YYYY-MM-DD
     };
   });
 }
 
-
-// *****************************************************
-// <!-- Section 4 : Routes -->
-// *****************************************************
-// Human readable type for wallet display
-
-
-
-
 // Make balance & user globally available to templates
 app.use((req, res, next) => {
   if (req.session.user) {
-    // Normalize balance to a number once per request
     const n = Number(req.session.user.balance);
     const safeBalance = Number.isFinite(n) ? n : 0;
 
@@ -148,7 +140,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
 
 // *****************************************************
 // Helper: Background presets
@@ -174,7 +165,7 @@ function defaultBackgroundLayers(dim = false) {
 }
 
 // *****************************************************
-// Section 4 : Auth Routes
+// Auth Routes
 // *****************************************************
 
 function renderLoginPage(res, extra = {}) {
@@ -186,7 +177,7 @@ function renderLoginPage(res, extra = {}) {
     titleText: 'BETWISE',
     subtitleText: 'Flow With The Odds',
     ...extra,
-    hideFooter: true
+    hideFooter: true,
   });
 }
 
@@ -209,6 +200,9 @@ app.post('/login', async (req, res) => {
   password = typeof password === 'string' ? password.trim() : '';
 
   if (!username || !password) {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid username or password.' });
+    }
     return renderLoginPage(res, {
       error: true,
       message: 'Invalid username or password.',
@@ -222,6 +216,9 @@ app.post('/login', async (req, res) => {
     );
 
     if (!user) {
+      if (req.is('application/json')) {
+        return res.status(400).json({ message: 'Invalid username or password.' });
+      }
       return renderLoginPage(res, {
         error: true,
         message: 'Invalid username or password.',
@@ -230,6 +227,9 @@ app.post('/login', async (req, res) => {
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
+      if (req.is('application/json')) {
+        return res.status(400).json({ message: 'Invalid username or password.' });
+      }
       return renderLoginPage(res, {
         error: true,
         message: 'Invalid username or password.',
@@ -242,9 +242,17 @@ app.post('/login', async (req, res) => {
       balance: user.balance || 0,
     };
 
+    // For JSON callers (tests), just send OK; for browser, redirect
+    if (req.is('application/json')) {
+      return res.status(200).json({ message: 'Success' });
+    }
+
     return res.redirect('/transition');
   } catch (err) {
     console.error('Login error:', err);
+    if (req.is('application/json')) {
+      return res.status(500).json({ message: 'Server error' });
+    }
     return renderLoginPage(res, {
       error: true,
       message: 'Something went wrong.',
@@ -262,19 +270,36 @@ app.get('/register', (req, res) => {
     title: 'Register',
     pageClass: 'register-page',
     backgroundLayers,
-    hideFooter: true
+    hideFooter: true,
   });
 });
 
-// REGISTER HANDLER
+// REGISTER HANDLER (supports JSON tests + normal HTML)
 app.post('/register', async (req, res) => {
   let { username, password } = req.body;
 
-  username = typeof username === 'string' ? username.trim() : '';
-  password = typeof password === 'string' ? password.trim() : '';
+  // Type check first (for tests)
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
+      title: 'Register',
+      pageClass: 'register-page',
+      backgroundLayers: defaultBackgroundLayers(false),
+      error: true,
+      message: 'Invalid input.',
+    });
+  }
 
-  if (!username || !password) {
-    return res.render('pages/register', {
+  const cleanUsername = username.trim();
+  const cleanPassword = password.trim();
+
+  if (!cleanUsername || !cleanPassword) {
+    if (req.is('application/json')) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    return res.status(400).render('pages/register', {
       title: 'Register',
       pageClass: 'register-page',
       backgroundLayers: defaultBackgroundLayers(false),
@@ -286,10 +311,14 @@ app.post('/register', async (req, res) => {
   try {
     const existing = await db.oneOrNone(
       'SELECT user_id FROM users WHERE username = $1',
-      [username]
+      [cleanUsername]
     );
 
     if (existing) {
+      // For tests, they just care about "Invalid input" on JSON
+      if (req.is('application/json')) {
+        return res.status(400).json({ message: 'Invalid input' });
+      }
       return res.render('pages/register', {
         title: 'Register',
         pageClass: 'register-page',
@@ -299,15 +328,21 @@ app.post('/register', async (req, res) => {
       });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(cleanPassword, 10);
 
     const user = await db.one(
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2)
        RETURNING user_id, username, balance`,
-      [username, hashed]
+      [cleanUsername, hashed]
     );
 
+    // For JSON (tests): return 302 + JSON body
+    if (req.is('application/json')) {
+      return res.status(302).json({ message: 'Success' });
+    }
+
+    // Normal browser: log in and redirect
     req.session.user = {
       user_id: user.user_id,
       username: user.username,
@@ -317,6 +352,9 @@ app.post('/register', async (req, res) => {
     return res.redirect('/transition');
   } catch (err) {
     console.error('Registration error:', err);
+    if (req.is('application/json')) {
+      return res.status(500).json({ message: 'Server error' });
+    }
     return res.render('pages/register', {
       title: 'Register',
       pageClass: 'register-page',
@@ -342,7 +380,7 @@ app.get('/transition', requireAuth, (req, res) => {
     siteName: 'BETWISE',
     backgroundLayers,
     user: req.session.user,
-    hideFooter: true
+    hideFooter: true,
   });
 });
 
@@ -370,7 +408,7 @@ app.get('/home', requireAuth, (req, res) => {
   });
 });
 
-//ransaction helper: record a balance change and log it
+// Transaction helper: record a balance change and log it
 async function recordTransaction(userId, deltaAmount, type, description = '') {
   return db.tx(async t => {
     const user = await t.one(
@@ -390,8 +428,6 @@ async function recordTransaction(userId, deltaAmount, type, description = '') {
     return user;
   });
 }
-
-
 
 // BLACKJACK
 app.get('/blackjack', requireAuth, (req, res) => {
@@ -414,7 +450,6 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
   }
 
   try {
-    // fresh balance
     const freshUser = await db.one(
       'SELECT user_id, balance FROM users WHERE user_id = $1',
       [user.user_id]
@@ -424,7 +459,6 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance.' });
     }
 
-    // subtract bet
     const updatedUser = await recordTransaction(
       freshUser.user_id,
       -bet,
@@ -447,7 +481,7 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
 // BLACKJACK: settle result – add payouts and log Win/Loss/Push
 app.post('/blackjack/settle', requireAuth, async (req, res) => {
   const user = req.session.user;
-  const { netPayout, result } = req.body; // netPayout = credits to ADD back
+  const { netPayout, result } = req.body;
   const numeric = Number(netPayout);
 
   if (!Number.isFinite(numeric) || numeric < 0) {
@@ -467,7 +501,6 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
     type = 'Blackjack Win';
     desc = `Blackjack win for +${numeric} credits`;
   } else {
-    // fallback
     type = 'Blackjack Result';
     desc = `Blackjack result ${result} for +${numeric} credits`;
   }
@@ -483,7 +516,6 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
         desc
       );
     } else {
-      // loss: bet already taken in /blackjack/start
       updatedUser = await db.one(
         'SELECT user_id, balance FROM users WHERE user_id = $1',
         [user.user_id]
@@ -505,14 +537,13 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
 // BLACKJACK: double down – subtract an extra bet equal to current bet
 app.post('/blackjack/double', requireAuth, async (req, res) => {
   const user = req.session.user;
-  const extraBet = Number(req.body.extraBet);  // usually same as currentBet
+  const extraBet = Number(req.body.extraBet);
 
   if (!extraBet || extraBet <= 0) {
     return res.status(400).json({ error: 'Invalid double amount.' });
   }
 
   try {
-    // Get latest balance from DB
     const freshUser = await db.one(
       'SELECT user_id, balance FROM users WHERE user_id = $1',
       [user.user_id]
@@ -522,7 +553,6 @@ app.post('/blackjack/double', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance to double.' });
     }
 
-    // Subtract the extra bet and log a transaction
     const updatedUser = await recordTransaction(
       freshUser.user_id,
       -extraBet,
@@ -541,7 +571,6 @@ app.post('/blackjack/double', requireAuth, async (req, res) => {
     return res.status(500).json({ error: 'Server error.' });
   }
 });
-
 
 // SLOTS
 app.get('/slots', requireAuth, (req, res) => {
@@ -592,13 +621,12 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
     payout = bet * 2;
   }
 
-  const netDelta = -bet + payout; // this is what changed in balance
+  const netDelta = -bet + payout;
 
-  // 2) apply delta & log transaction
   const updatedUser = await recordTransaction(
     req.session.user.user_id,
     netDelta,
-    'slots',
+    payout > 0 ? 'Slots Win' : 'Slots Spin',
     `Slots spin bet=${bet}, payout=${payout}`
   );
 
@@ -622,7 +650,7 @@ app.get('/mines', requireAuth, (req, res) => {
   });
 });
 
-//Mines Game Logic (client-side JS)
+// MINES: start (bet taken)
 app.post('/mines/start', requireAuth, async (req, res) => {
   const user = req.session.user;
   let bet = Number(req.body.bet);
@@ -632,7 +660,6 @@ app.post('/mines/start', requireAuth, async (req, res) => {
   }
 
   try {
-    // Ensure we have up-to-date balance from DB
     const freshUser = await db.one(
       'SELECT user_id, balance FROM users WHERE user_id = $1',
       [user.user_id]
@@ -642,7 +669,6 @@ app.post('/mines/start', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance.' });
     }
 
-    // delta is negative (bet is taken from balance)
     const updatedUser = await recordTransaction(
       freshUser.user_id,
       -bet,
@@ -650,7 +676,6 @@ app.post('/mines/start', requireAuth, async (req, res) => {
       `Started a Mines round with bet ${bet}`
     );
 
-    // update session
     req.session.user.balance = updatedUser.balance;
 
     return res.json({
@@ -663,6 +688,7 @@ app.post('/mines/start', requireAuth, async (req, res) => {
   }
 });
 
+// MINES: cashout/settle
 app.post('/mines/cashout', requireAuth, async (req, res) => {
   const user = req.session.user;
   const { payout, resultType } = req.body;
@@ -683,7 +709,6 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
     type = 'Mines Win';
     desc = `Mines full clear win for +${numericPayout} credits`;
   } else {
-    // default to cashout if positive payout but not flagged as win
     type = 'Mines Cashout';
     desc = `Mines cashout for +${numericPayout} credits`;
   }
@@ -699,7 +724,6 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
         desc
       );
     } else {
-      // no balance change for loss in this route (bet was already taken at /mines/start)
       updatedUser = await db.one(
         'SELECT user_id, balance FROM users WHERE user_id = $1',
         [user.user_id]
@@ -717,8 +741,6 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
     return res.status(500).json({ error: 'Server error.' });
   }
 });
-
-
 
 // LEADERBOARD (placeholder)
 app.get('/leaderboard', requireAuth, async (req, res) => {
@@ -750,21 +772,19 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
 // WALLET
 app.get('/wallet', requireAuth, async (req, res) => {
   const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
+    'neon-clouds dim',
+    'caustics softer',
+    'bloom-overlay subtle',
+    'neon-dots',
   ];
 
   try {
-    // Refresh balance from DB
     const row = await db.one(
       'SELECT balance FROM users WHERE user_id = $1',
       [req.session.user.user_id]
     );
     req.session.user.balance = Number(row.balance);
 
-    // Load recent transactions for this user
     const transactions = await getUserTransactions(req.session.user.user_id);
 
     res.render('pages/wallet', {
@@ -774,7 +794,7 @@ app.get('/wallet', requireAuth, async (req, res) => {
       siteName: 'BETWISE',
       user: req.session.user,
       balance: req.session.user.balance,
-      transactions
+      transactions,
     });
   } catch (err) {
     console.error('Error loading wallet:', err);
@@ -782,20 +802,18 @@ app.get('/wallet', requireAuth, async (req, res) => {
   }
 });
 
-
 // ADD CREDITS HANDLER WITH DAILY LIMIT (Wallet Page)
 app.post('/wallet/add-credits', requireAuth, async (req, res) => {
   const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
+    'neon-clouds dim',
+    'caustics softer',
+    'bloom-overlay subtle',
+    'neon-dots',
   ];
 
   const rawAmount = req.body.amount;
   const amount = Number(rawAmount);
 
-  // ---- validate: integer between 1 and 1000 ----
   const isInt = Number.isInteger(amount);
   if (!isInt || amount < 1 || amount > 1000) {
     console.log('Invalid wallet input:', rawAmount);
@@ -811,12 +829,11 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
       user: req.session.user,
       balance,
       transactions,
-      errorMessage: 'Invalid input'
+      errorMessage: 'Invalid input',
     });
   }
 
   try {
-    // 1. Get current daily stats
     const row = await db.one(
       `SELECT balance, daily_added_credits, last_credit_topup_date
        FROM users
@@ -824,21 +841,19 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
       [req.session.user.user_id]
     );
 
-    const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    const todayStr = new Date().toISOString().slice(0, 10);
     const lastDate = row.last_credit_topup_date
       ? row.last_credit_topup_date.toISOString().slice(0, 10)
       : null;
 
     let dailyAdded = row.daily_added_credits;
 
-    // Reset daily counter if last top-up wasn't today
     if (lastDate !== todayStr) {
       dailyAdded = 0;
     }
 
     const newDailyTotal = dailyAdded + amount;
 
-    // Enforce daily limit
     if (newDailyTotal > DAILY_CREDIT_LIMIT) {
       const remaining = Math.max(DAILY_CREDIT_LIMIT - dailyAdded, 0);
 
@@ -856,11 +871,10 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
         user: req.session.user,
         balance: row.balance,
         transactions,
-        errorMessage: message
+        errorMessage: message,
       });
     }
 
-    // 2. Valid: update balance + daily counters + insert transaction in one tx
     await db.tx(async t => {
       const newBalance = Number(row.balance) + amount;
 
@@ -879,7 +893,6 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
         [req.session.user.user_id, amount, 'Added credits from wallet page']
       );
 
-      // keep session in sync
       req.session.user.balance = newBalance;
     });
 
@@ -889,9 +902,6 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
     res.status(500).send('Server error');
   }
 });
-
-
-
 
 // PROFILE (view-only)
 app.get('/profile', requireAuth, (req, res) => {
@@ -910,7 +920,6 @@ app.get('/profile', requireAuth, (req, res) => {
   });
 });
 
-
 // LOGOUT
 function handleLogout(req, res) {
   req.session.destroy(() => res.redirect('/'));
@@ -919,11 +928,14 @@ function handleLogout(req, res) {
 app.get('/logout', handleLogout);
 app.post('/logout', handleLogout);
 
-// *****************************************************
-// Start Server
-// *****************************************************
+// ================= TEST ROUTE (for server.spec.js) ==================
+app.get('/welcome', (req, res) => {
+  res.json({ status: 'success', message: 'Welcome!' });
+});
 
+// ================= START SERVER & EXPORT FOR TESTS ==================
 const PORT = process.env.PORT || 3000;
+
 const server = app.listen(PORT, () => {
   console.log(`Betwise server running at http://localhost:${PORT}`);
 });

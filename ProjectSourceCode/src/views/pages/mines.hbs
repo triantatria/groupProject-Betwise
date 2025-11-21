@@ -1,7 +1,6 @@
-<div class="bg-layer neon-clouds dim"></div>
-<div class="bg-layer caustics softer"></div>
-<div class="bg-layer bloom-overlay subtle"></div>
-<div class="bg-layer neon-dots"></div>
+{{#each backgroundLayers}}
+  <div class="bg-layer {{this}}"></div>
+{{/each}}
 
 {{> nav }}
 
