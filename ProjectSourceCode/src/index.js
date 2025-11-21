@@ -76,8 +76,16 @@ function friendlyType(code) {
   switch (code) {
     case 'wallet_add': return 'Add Credits';
     case 'slots': return 'Slots Result';
-    case 'blackjack': return 'Blackjack Result';
-    case 'mines': return 'Mines Result';
+    case 'Blackjack Bet':    return 'Blackjack Bet';
+    case 'Blackjack Win':    return 'Blackjack Win';
+    case 'Blackjack Loss':   return 'Blackjack Loss';
+    case 'Blackjack Push':   return 'Blackjack Push';
+    case 'Blackjack Double': return 'Blackjack Double';
+    case 'Mines Bet':      return 'Mines Bet';
+    case 'Mines Win':      return 'Mines Win';
+    case 'Mines Loss':     return 'Mines Loss';
+    case 'Mines Cashout':  return 'Mines Cashout';
+
     default: return code;
   }
 }
@@ -375,6 +383,145 @@ app.get('/blackjack', requireAuth, (req, res) => {
     user: req.session.user,
   });
 });
+
+// BLACKJACK: start round – subtract bet and log "Blackjack Bet"
+app.post('/blackjack/start', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const bet = Number(req.body.bet);
+
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: 'Invalid bet amount.' });
+  }
+
+  try {
+    // fresh balance
+    const freshUser = await db.one(
+      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      [user.user_id]
+    );
+
+    if (bet > freshUser.balance) {
+      return res.status(400).json({ error: 'Insufficient balance.' });
+    }
+
+    // subtract bet
+    const updatedUser = await recordTransaction(
+      freshUser.user_id,
+      -bet,
+      'Blackjack Bet',
+      `Started a Blackjack round with bet ${bet}`
+    );
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Blackjack start error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// BLACKJACK: settle result – add payouts and log Win/Loss/Push
+app.post('/blackjack/settle', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const { netPayout, result } = req.body; // netPayout = credits to ADD back
+  const numeric = Number(netPayout);
+
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return res.status(400).json({ error: 'Invalid net payout.' });
+  }
+
+  let type;
+  let desc;
+
+  if (numeric === 0 && result === 'loss') {
+    type = 'Blackjack Loss';
+    desc = 'Blackjack round lost (no payout)';
+  } else if (result === 'push') {
+    type = 'Blackjack Push';
+    desc = `Blackjack push, returned ${numeric} credits`;
+  } else if (result === 'win') {
+    type = 'Blackjack Win';
+    desc = `Blackjack win for +${numeric} credits`;
+  } else {
+    // fallback
+    type = 'Blackjack Result';
+    desc = `Blackjack result ${result} for +${numeric} credits`;
+  }
+
+  try {
+    let updatedUser;
+
+    if (numeric > 0) {
+      updatedUser = await recordTransaction(
+        user.user_id,
+        numeric,
+        type,
+        desc
+      );
+    } else {
+      // loss: bet already taken in /blackjack/start
+      updatedUser = await db.one(
+        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        [user.user_id]
+      );
+    }
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Blackjack settle error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// BLACKJACK: double down – subtract an extra bet equal to current bet
+app.post('/blackjack/double', requireAuth, async (req, res) => {
+  const user = req.session.user;
+  const extraBet = Number(req.body.extraBet);  // usually same as currentBet
+
+  if (!extraBet || extraBet <= 0) {
+    return res.status(400).json({ error: 'Invalid double amount.' });
+  }
+
+  try {
+    // Get latest balance from DB
+    const freshUser = await db.one(
+      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      [user.user_id]
+    );
+
+    if (extraBet > freshUser.balance) {
+      return res.status(400).json({ error: 'Insufficient balance to double.' });
+    }
+
+    // Subtract the extra bet and log a transaction
+    const updatedUser = await recordTransaction(
+      freshUser.user_id,
+      -extraBet,
+      'Blackjack Double',
+      `Blackjack double down for extra bet ${extraBet}`
+    );
+
+    req.session.user.balance = updatedUser.balance;
+
+    return res.json({
+      ok: true,
+      newBalance: updatedUser.balance,
+    });
+  } catch (err) {
+    console.error('Blackjack double error:', err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 
 // SLOTS
 app.get('/slots', requireAuth, (req, res) => {
