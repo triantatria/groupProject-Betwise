@@ -1,12 +1,13 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
+<div class="bg-layer neon-clouds dim"></div>
+<div class="bg-layer caustics softer"></div>
+<div class="bg-layer bloom-overlay subtle"></div>
+<div class="bg-layer neon-dots"></div>
 
-{{> nav }}
+{{> nav}}
 
 <main class="blackjack-container fade-in">
+
   <div class="bj-side">
-    
     <section class="bj-panel dealer-zone glass-card">
       <h2 class="bj-label">Dealer</h2>
       <div class="bj-cards" id="dealerCards"></div>
@@ -18,7 +19,6 @@
       <div class="bj-cards" id="playerCards"></div>
       <div class="bj-score" id="playerScore">Score: —</div>
     </section>
-
   </div>
 
   <aside class="bj-main-controls glass-card">
@@ -27,7 +27,7 @@
       <input type="number" placeholder="0.00" class="bet-input" id="bjBet" min="0" step="1">
     </div>
 
-    <button class="play-btn" id="bjDealBtn">DEAL</button>
+    <button onclick="console.log("clicked")" class="play-btn" id="bjDealBtn">DEAL</button>
 
     <div class="bj-actions" id="bjActionButtons">
       <button class="play-btn secondary" id="bjHitBtn">Hit</button>
@@ -37,4 +37,11 @@
 
     <div class="bj-result" id="bjResultText"></div>
   </aside>
+
 </main>
+
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>
+
+<script src="resources/js/blackjack.js"></script>
