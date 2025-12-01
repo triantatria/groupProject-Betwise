@@ -89,11 +89,12 @@ body {
 
 .enter-button {
   margin-top: 2rem;
+  margin-bottom: 2rem;
   padding: 1rem 3rem;
   font-size: 1.25rem; font-weight: 600; color: white;
   border: none; border-radius: 18px; cursor: pointer;
-  background: #11121a;
-  opacity: 0; transform: translateY(20px) scale(.9);
+  background: white;
+  opacity: 100; transform: translateY(20px) scale(.9);
   animation: fadeIn .7s ease 1.2s forwards, neonPulse 3s infinite;
 }
 
@@ -709,6 +710,17 @@ details[open] .rules-summary {
   flex-direction: column;
   gap: 1.3rem;
   margin-top: .4rem;
+}
+
+.register-form {
+  display: block;
+  margin-top: .4rem;
+}
+
+.input-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
 }
 
 .input-group label {

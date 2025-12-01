@@ -13,21 +13,37 @@
       </div>
     {{/if}}
 
-    <form class="login-form register-form" action="/register" method="post">
-      <div class="input-group">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text"
-               placeholder="Enter your username" required />
-      </div>
+    <form class="register-form" action="/register" method="post">
 
-      <div class="input-group">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password"
-               placeholder="Create a password" required />
-      </div>
+  <div class="input-row">
+    <div class="input-group">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" placeholder="Enter your username" required />
+    </div>
 
-      <button type="submit" class="enter-button">Sign up</button>
-    </form>
+    <div class="input-group">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="Enter your password" required
+      pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+      title="At least 8 characters, with uppercase, lowercase, a number, and a symbol." />
+    </div>
+  </div>
+
+  <div class="input-row">
+    <div class="input-group">
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" placeholder="Enter your name" required />
+    </div>
+
+    <div class="input-group">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="text" placeholder="Enter your email" required
+      pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$" title="Valid email" />
+    </div>
+  </div>
+
+  <button type="submit" class="enter-button">Sign up</button>
+</form>
 
     <p class="login-footer-text">
       Already have an account? <a href="/">Login</a>

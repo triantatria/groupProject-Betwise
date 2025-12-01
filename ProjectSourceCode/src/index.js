@@ -23,6 +23,10 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/views/partials',
   defaultLayout: 'main',
 });
+hbs.handlebars.registerHelper('inc', function (value) {
+  return Number(value) + 1;
+});
+
 
 const dbConfig = {
   host: 'db',
@@ -378,13 +382,13 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
                   LIMIT 10`;
 
   try {
-    const result = await db.query(query);   // <-- FIXED
-    const users = result.rows; 
+    const hello = await db.query(query);   // <-- FIXED
+    //const hello2 = result.rows; 
 
     const result2 = await db.query(query2); 
 
     res.render('pages/leaderboard', {
-      users,
+      hello,
       title: 'Betwise — Leaderboard',
       pageClass: 'leaderboard-page ultra-ink',
       backgroundLayers,
