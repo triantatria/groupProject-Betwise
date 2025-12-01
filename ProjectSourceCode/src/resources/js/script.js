@@ -46,7 +46,7 @@ if (grid) {
 }*/
 // mines logic
 
-const Mines = (() => {
+/*const Mines = (() => {
   const GRID_SIZE = 25;        // 5x5
   const DEFAULT_MINES = 5;     // number of mines for now
 
@@ -164,7 +164,7 @@ const Mines = (() => {
 
   return { init, newRound };
 })();
-
+*/
 
 // mines logic
 
