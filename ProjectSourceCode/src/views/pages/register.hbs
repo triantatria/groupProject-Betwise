@@ -14,6 +14,25 @@
     {{/if}}
 
     <form class="register-form" action="/register" method="post">
+  <div class="input-row">
+    <div class="input-group">
+      <label for="fname">First Name</label>
+      <input id="fname" name="fname" type="text" placeholder="Enter your first name" required />
+    </div>
+
+    <div class="input-group">
+      <label for="lname">Last Name</label>
+      <input id="lname" name="lname" type="text" placeholder="Enter your last name" required />
+    </div>
+  </div>
+
+  <div class="input-row">
+    <div class="input-group">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="text" placeholder="Enter your email" required
+      pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$" title="Valid email" />
+    </div>
+  </div>
 
   <div class="input-row">
     <div class="input-group">
@@ -29,18 +48,7 @@
     </div>
   </div>
 
-  <div class="input-row">
-    <div class="input-group">
-      <label for="name">Name</label>
-      <input id="name" name="name" type="text" placeholder="Enter your name" required />
-    </div>
 
-    <div class="input-group">
-      <label for="email">Email</label>
-      <input id="email" name="email" type="text" placeholder="Enter your email" required
-      pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$" title="Valid email" />
-    </div>
-  </div>
 
   <button type="submit" class="enter-button">Sign up</button>
 </form>
