@@ -206,7 +206,7 @@ app.get('/register', (req, res) => {
 
 // REGISTER HANDLER
 app.post('/register', async (req, res) => {
-  let { username, password } = req.body;
+  let { fname, lname, email, username, password } = req.body;
 
   username = typeof username === 'string' ? username.trim() : '';
   password = typeof password === 'string' ? password.trim() : '';
@@ -240,10 +240,10 @@ app.post('/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     await db.one(
-      `INSERT INTO users (username, password_hash)
-       VALUES ($1, $2)
+      `INSERT INTO users (fname, lname, email, username, password_hash)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING user_id, username`,
-      [username, hashed]
+      [fname, lname, email, username, hashed]
     );
 
     // 🎉 NO auto-login — redirect user back to login
