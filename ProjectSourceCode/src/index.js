@@ -200,7 +200,7 @@ app.post('/register', async (req, res) => {
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2)
        RETURNING user_id, username`,
-      [username, hashed]
+      [fname, lname, email, username, hashed]
     );
 
     req.session.user = {
