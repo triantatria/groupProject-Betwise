@@ -711,6 +711,12 @@ details[open] .rules-summary {
   margin-top: .4rem;
 }
 
+.input-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
 .input-group label {
   text-align: left;
   font-size: .95rem;

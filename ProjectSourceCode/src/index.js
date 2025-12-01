@@ -446,6 +446,9 @@ app.get('/profile', requireAuth, (req, res) => {
   const profileUser = {
     username: user.username,
     balance: typeof user.balance === 'number' ? user.balance : 0,
+    fname: user.fname,
+    lname: user.lname,
+    email: user.email,
   };
 
   res.render('pages/profile', {
