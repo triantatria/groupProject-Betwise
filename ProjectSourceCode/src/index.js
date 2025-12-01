@@ -440,7 +440,7 @@ app.get('/wallet', requireAuth, async (req, res) => {
 });
 
 // PROFILE (view-only)
-app.get('/profile', requireAuth, (req, res) => {
+app.get('/profile', requireAuth, async (req, res) => {
   const user = req.session.user;
 
   /*const profileUser = {
@@ -450,20 +450,22 @@ app.get('/profile', requireAuth, (req, res) => {
     lname: user.lname,
     email: user.email,
   };*/
-  /*try {
-    const existing = await db.oneOrNone(
-      'SELECT user_id FROM users WHERE username = $1',
-      [username]
+  try {
+    const prof = await db.one(
+      'SELECT * FROM users WHERE username = $1',
+      [user.username]
     );
-    }
-  catch{}*/
 
-  res.render('pages/profile', {
-    title: 'Profile',
-    pageClass: 'profile-page ultra-ink',
-    backgroundLayers: defaultBackgroundLayers(true),
-    user: profileUser,
-  });
+    res.render('pages/profile', {
+      title: 'Profile',
+      pageClass: 'profile-page ultra-ink',
+      backgroundLayers: defaultBackgroundLayers(true),
+      prof,
+    });
+    }
+  catch{}
+
+  
 });
 
 // LOGOUT
