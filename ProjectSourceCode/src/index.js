@@ -443,13 +443,20 @@ app.get('/wallet', requireAuth, async (req, res) => {
 app.get('/profile', requireAuth, (req, res) => {
   const user = req.session.user;
 
-  const profileUser = {
+  /*const profileUser = {
     username: user.username,
     balance: typeof user.balance === 'number' ? user.balance : 0,
     fname: user.fname,
     lname: user.lname,
     email: user.email,
-  };
+  };*/
+  /*try {
+    const existing = await db.oneOrNone(
+      'SELECT user_id FROM users WHERE username = $1',
+      [username]
+    );
+    }
+  catch{}*/
 
   res.render('pages/profile', {
     title: 'Profile',
