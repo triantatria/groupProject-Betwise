@@ -1729,6 +1729,62 @@ body.fade-out { animation: fadeOut 2s ease forwards; }
 @keyframes homeFadeIn { 0% { opacity: 0; transform: scale(1.02); } 100% { opacity: 1; transform: scale(1); } }
 
 .wallet-page,
+
+/* WALLET FORM LAYOUT */
+.wallet-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.wallet-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.wallet-input-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Make input match the rest of the glass UI */
+.wallet-input {
+  width: 140px;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.06);
+  color: #e9faff;
+  text-align: center;
+  font-size: 0.95rem;
+  backdrop-filter: blur(10px);
+  transition: 0.18s ease;
+}
+
+.wallet-input:focus {
+  outline: none;
+  border-color: #00eaff;
+  box-shadow: 0 0 14px #00eaff77;
+}
+
+/* Hint + error messaging */
+.wallet-hint {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.wallet-error {
+  color: #ff5c7b;
+  text-shadow: 0 0 8px #ff30d666;
+  margin-top: 0.75rem;
+}
+
+
+
 .leaderboard-page,
 .mines-page,
 .blackjack-page,
