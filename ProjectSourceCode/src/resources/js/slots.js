@@ -1,28 +1,47 @@
+// slots.js
 document.addEventListener('DOMContentLoaded', () => {
-  const spinBtn = document.getElementById('slotSpin');
-  const reelEls = [
+  const spinBtn  = document.getElementById('slotSpin');
+  const reelEls  = [
     document.getElementById('reel1'),
     document.getElementById('reel2'),
     document.getElementById('reel3'),
   ];
   const betInput = document.getElementById('slotBet');
   const resultEl = document.getElementById('slotResult');
-  const balanceEl = document.getElementById('slotBalance');
 
-  if (!spinBtn || reelEls.some(r => !r) || !betInput || !resultEl || !balanceEl) {
+  // If key elements are missing, do nothing
+  if (!spinBtn || reelEls.some(r => !r) || !betInput || !resultEl) {
     return;
   }
 
-  function parseBalanceFromText() {
-    const text = balanceEl.textContent || '';
+  // Helper: parse the nav balance if window.initialBalance is missing
+  function readNavBalance() {
+    const navEl = document.getElementById('balance');
+    if (!navEl) return 0;
+
+    const text = navEl.textContent || '';
     const match = text.match(/([\d.]+)/);
-    return match ? parseFloat(match[1]) : 0;
+    return match ? Number(match[1]) : 0;
   }
 
-  let currentBalance = parseBalanceFromText();
+  // Start balance from server or from nav
+  let currentBalance =
+    typeof window.initialBalance === 'number'
+      ? window.initialBalance
+      : readNavBalance();
 
   const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
 
+  // Update nav header balance (the one in the navbar)
+  function updateHeaderBalance(newBalance) {
+    const el = document.getElementById('balance');
+    const n = Number(newBalance);
+    if (el && Number.isFinite(n)) {
+      el.textContent = `$${n}`;
+    }
+  }
+
+  // Reel spin animation
   function startAnimation() {
     return reelEls.map((el, idx) => {
       return setInterval(() => {
@@ -32,14 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function updateBalanceDisplay(newBalance) {
-    currentBalance = newBalance;
-    balanceEl.textContent = `Balance: $${newBalance}`;
-  }
-
+  // ---------------- SPIN BUTTON ----------------
   spinBtn.addEventListener('click', async () => {
     resultEl.textContent = '';
-    const bet = parseFloat(betInput.value);
+    const bet = Number(betInput.value);
 
     // Validate bet first
     if (!bet || bet <= 0) {
@@ -65,9 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ bet }),
       });
 
+      // Handle HTTP errors
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         resultEl.textContent = data.error || 'Server error.';
+        timers.forEach(t => clearInterval(t));
+        spinBtn.disabled = false;
         return;
       }
 
@@ -82,7 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
         reelEls[i].classList.remove('spin'); // remove CSS spin class
       }
 
-      updateBalanceDisplay(newBalance);
+      // Update our local balance + nav header
+      currentBalance = newBalance;
+      updateHeaderBalance(newBalance);
 
       resultEl.textContent = payout > 0
         ? `You won $${payout}!`
@@ -91,8 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error(err);
       resultEl.textContent = 'Network or server error.';
-    } finally {
       timers.forEach(t => clearInterval(t));
+    } finally {
       spinBtn.disabled = false;
       // ensure all reels have spin class removed
       reelEls.forEach(el => el.classList.remove('spin'));
@@ -102,13 +122,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+// Rules <details> toggle text
 document.addEventListener('DOMContentLoaded', () => {
   const details = document.querySelector('.slot-rules');
   if (!details) return;
 
-  const summary = details.querySelector('.rules-summary');
+  const summary    = details.querySelector('.rules-summary');
   const closedText = summary.dataset.closedText;
-  const openText = summary.dataset.openText;
+  const openText   = summary.dataset.openText;
 
   details.addEventListener('toggle', () => {
     summary.textContent = details.open ? openText : closedText;

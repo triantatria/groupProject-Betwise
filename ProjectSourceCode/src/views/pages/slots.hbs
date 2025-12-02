@@ -7,8 +7,6 @@
 <main class="slots-container fade-in">
   <h2 class="section-title soft-glow">Slots</h2>
 
-  <p id="slotBalance" class="slot-balance">Balance: ${{balance}}</p>
-
   {{> slotRules }}
 
   <div class="slot-machine glass-card deep">
@@ -29,5 +27,14 @@
     <div class="slot-result" id="slotResult"></div>
   </div>
 </main>
+
+<footer class="footer-panel glass-subtle">
+  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
+</footer>
+
+<script>
+  // Pass the server balance into the frontend
+  window.initialBalance = {{balance}};
+</script>
 
 <script src="/resources/js/slots.js"></script>
