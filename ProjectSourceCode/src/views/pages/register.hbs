@@ -1,19 +1,29 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
 
-<div class="center-stage login-entry">
-  <h1 class="logo-title">BETWISE</h1>
-  <p class="bw-slogan">Flow With The Odds</p>
+  {{#each backgroundLayers}} 
+    <div class="bg-layer {{this}}"></div> 
+  {{/each}}
 
-  <div class="login-center">
-    {{#if error}}
-      <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">
-        {{message}}
-      </div>
-    {{/if}}
+  <div class="fish-swarm register-fish">
+    <img src="/resources/images/pinkfish.png" class="pf pf1" />
+    <img src="/resources/images/pinkfish.png" class="pf pf2" />
+    <img src="/resources/images/pinkfish.png" class="pf pf3" />
+    <img src="/resources/images/pinkfish.png" class="pf pf4" />
+    <img src="/resources/images/pinkfish.png" class="pf pf5" />
+    <img src="/resources/images/pinkfish.png" class="pf pf6" />
+  </div>
 
-    <form class="register-form" action="/register" method="post">
+  <div class="auth-container">
+
+    <h1 class="auth-logo">BETWISE</h1>
+    <p class="auth-tagline">Flow With The Odds</p>
+
+    <div class="auth-card">
+
+      {{#if error}}
+        <div class="auth-error">{{message}}</div>
+      {{/if}}
+
+      <form class="register-form" action="/register" method="post">
     <div class="input-row">
     <div class="input-group">
       <label for="fname">First Name</label>
@@ -49,65 +59,10 @@
 
   <button type="submit" class="enter-button">Sign up</button>
 </form>
-
-    <p class="login-footer-text">
-      Already have an account? <a href="/">Login</a>
-    </p>
-<div id="auth-wrapper" class="register-page fade-in">
-
-  {{#each backgroundLayers}} 
-    <div class="bg-layer {{this}}"></div> 
-  {{/each}}
-
-  <div class="fish-swarm register-fish">
-    <img src="/resources/images/pinkfish.png" class="pf pf1" />
-    <img src="/resources/images/pinkfish.png" class="pf pf2" />
-    <img src="/resources/images/pinkfish.png" class="pf pf3" />
-    <img src="/resources/images/pinkfish.png" class="pf pf4" />
-    <img src="/resources/images/pinkfish.png" class="pf pf5" />
-    <img src="/resources/images/pinkfish.png" class="pf pf6" />
-  </div>
-
-  <div class="auth-container">
-
-    <h1 class="auth-logo">BETWISE</h1>
-    <p class="auth-tagline">Flow With The Odds</p>
-
-    <div class="auth-card">
-
-      {{#if error}}
-        <div class="auth-error">{{message}}</div>
-      {{/if}}
-
-      <form class="auth-form" action="/register" method="post">
-
-        <div class="auth-input">
-          <label>First Name</label>
-          <input type="text" name="firstName" required>
-        </div>
-
-        <div class="auth-input">
-          <label>Email</label>
-          <input type="email" name="email" required>
-        </div>
-
-        <div class="auth-input">
-          <label>Username</label>
-          <input type="text" name="username" required>
-        </div>
-
-        <div class="auth-input">
-          <label>Password</label>
-          <input type="password" name="password" required>
-        </div>
-
-        <button class="auth-primary-btn" type="submit">REGISTER</button>
-
         <a href="/login" class="auth-secondary-btn" data-fade>
           Back to Login
         </a>
 
-      </form>
     </div>
 
   </div>
