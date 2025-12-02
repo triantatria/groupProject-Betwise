@@ -118,6 +118,7 @@ body {
 .enter-button {
   margin-top: 2rem;
   padding: 1rem 3rem;
+  font-family: "Audiowide";
   font-size: 1.25rem; font-weight: 600; color: white;
   border: none; border-radius: 18px; cursor: pointer;
   background: #11121a;
@@ -218,21 +219,48 @@ body {
   font-size: .9rem; border-top: 1px solid rgba(255,255,255,.2);
 }
 
-.play-btn,
-.play-btn.secondary,
-.slot-spin-btn,
-.enter-button {
+.game-card .play-btn {
   background: #02101a;
+  font-family: "Audiowide";
   color: #e9faff;
-  border: 1px solid #00eaffaa;
-  padding: 0.65rem 1.3rem;
+  border: 0.5px solid #00eaffaa;
+  padding: 0.6rem 1rem;
   border-radius: 10px;
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 400;
   cursor: pointer;
-  transition: 0.18s ease;
-  box-shadow: 0 0 14px #00eaff44 inset;
+  transition: .18s ease;
+  width: auto;
+}
+
+.blackjack-page .play-btn {
+  background: #06121e;
+  border: none;
+  font-family: "Audiowide";
+  padding: 0.8rem 1.8rem;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 210px;
+  font-size: 1.1rem;
+  box-shadow: 0 0 18px #00eaff;
+  transition: .2s;
+}
+
+.slots-page .slot-spin-btn {
+  padding: .8rem 2.4rem;
+  font-size: 1.25rem;
+  font-family: "Audiowide";
+  border-radius: 14px;
+  border: none;
+  background: #06121e;
+  color: white;
+}
+
+.splash-page .enter-button,
+.login-page .enter-button,
+.register-page .enter-button {
+  padding: 1rem 3rem;
+  font-size: 1.25rem;
+  font-family: "Audiowide";
 }
 
 .play-btn:hover,
@@ -323,206 +351,309 @@ body {
   text-shadow: 0 0 8px #00eaffaa;
 }
 
-/* MINES PAGE */
-.mines-page .mines-container {
-  display: flex; gap: 2rem;
-  padding: 12vh 6vw 8vh;
-  align-items: flex-start; justify-content: center;
+/* --- MINES PAGE --- */
+
+/* Bring page up under navbar */
+.mines-page {
+  padding-top: 8vh;
+  text-align: center;
 }
 
-/* Sidebar */
-.mines-side {
-  width: 260px; padding: 1.4rem;
-  display: flex; flex-direction: column; gap: 1rem;
-}
-
+/* Title */
 .mines-title {
   font-family: "Audiowide";
-  font-size: 2rem; text-shadow: 0 0 20px #00eaff88; margin-bottom: .75rem;
+  font-size: 3rem;
+  margin-bottom: 1.2rem;
+  text-shadow: 0 0 20px #00eaffaa;
 }
 
-/* Betting */
-.bet-panel label { font-size: .85rem; margin-top: .4rem; opacity: .85; }
-
-.bet-input {
-  width: 100%; padding: .6rem 1rem; border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.22);
-  background: rgba(255,255,255,.06); color: white; margin-bottom: .4rem;
-  backdrop-filter: blur(8px);
+/* Layout: matches Blackjack spacing */
+.mines-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 3rem;
+  margin-top: 0;
+  padding-bottom: 10vh;
 }
-.bet-input:focus { outline: 2px solid #00eaffaa; }
 
-.play-btn.wide { width: 100%; padding: .7rem; margin-top: .8rem; }
+/* Panels match blackjack/slots cards */
+.mines-panel,
+.mines-grid-panel {
+  background: rgba(0, 10, 20, .55);
+  border: 1px solid rgba(0,255,255,.22);
+  backdrop-filter: blur(18px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 0 25px #00eaff33 inset;
+}
 
-.cashout-btn {
-  width: 100%; padding: .7rem; margin-top: .5rem; border-radius: 10px;
-  background: #00eaffdd; border: none; color: #000; font-weight: 600; cursor: pointer;
+/* Left panel width */
+.mines-panel {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Balance */
+.mines-balance {
+  font-size: 1.15rem;
+  text-shadow: 0 0 12px #00eaffaa;
+  margin-bottom: .5rem;
+}
+
+/* Inputs */
+.mines-label {
+  font-size: .85rem;
+  opacity: .8;
+  text-align: left;
+}
+
+.mines-input {
+  width: 100%;
+  padding: .7rem 1rem;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.15);
+  color: #eaffff;
+  margin-top: .2rem;
+  margin-bottom: .5rem;
+}
+
+/* Buttons */
+.mines-btn {
+  padding: .75rem 0;
+  border-radius: 12px;
+  background: #031823;
+  border: 1px solid #00eaff88;
+  color: white;
+  cursor: pointer;
+  font-family: "Audiowide";
   transition: .2s;
 }
-.cashout-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px #00eaff; }
 
-/* Grid */
-.mines-grid {
-  padding: 1.6rem; border-radius: 18px;
-  width: 420px; min-width: 420px;
+.mines-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 16px #00eaff;
 }
 
+/* Status text */
+.mines-status {
+  text-align: center;
+  min-height: 24px;
+  font-size: .9rem;
+  margin-top: .7rem;
+}
+
+/* Square grid panel */
+.mines-grid-panel {
+  width: 420px;
+  padding: 1.6rem;
+}
+
+/* 5×5 tiles */
 #minesGrid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: .7rem;
 }
 
+/* Tiles */
 .mine-tile {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.18);
-  aspect-ratio: 1/1; border-radius: 12px; cursor: pointer; transition: .18s;
-  backdrop-filter: blur(8px);
+  aspect-ratio: 1/1;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(0,255,255,.22);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: .18s;
 }
-.mine-tile:hover { transform: translateY(-3px); box-shadow: 0 0 18px #00eaff55; }
+
+.mine-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 14px #00eaff55;
+}
 
 .mine-safe {
-  background: #00eaff77; border-color: #00eaffaa; box-shadow: 0 0 20px #00eaffaa;
+  background: #00eaff66;
+  border-color: #00eaffaa;
 }
 
 .mine-bomb {
-  background: #ff006aaa; border-color: #ff33bbaa; box-shadow: 0 0 20px #ff0088aa;
+  background: #ff006a99;
+  border-color: #ff33bbaa;
 }
 
 .mine-disabled {
+  opacity: .5;
   pointer-events: none;
-  opacity: 0.5;
-  filter: grayscale(100%);
 }
 
-.hidden { display: none; }
+.hidden {
+  display: none !important;
+}
 
-/* BLACKJACK PAGE */
+/* --- BLACKJACK PAGE: Three-Column Layout --- */
 
-.blackjack-container {
+.blackjack-page .blackjack-container {
+  min-height: auto;          /* don't force full-page centering */
+  margin-top: 2.5rem;        /* space below the title */
+  
   display: flex;
-  flex-direction: row;
   justify-content: center;
-  align-items: flex-start;
-  gap: 4rem;
-  padding: 10rem 4rem 12rem;
-  flex-wrap: nowrap;
-}
+  align-items: flex-start;    /* start at the top, not centered vertically */
+  gap: 3rem;
 
-/* Dealer (left) and Player (center) Panels */
-.bj-panel {
-  background: rgba(0, 5, 10, 0.70);
-  border-radius: 22px;
-  padding: 3rem 3rem;
-  width: 440px;
-  min-height: 330px;
   text-align: center;
-  color: #e9faff;
-  box-shadow:
-    0 0 40px #00131f inset,
-    0 0 22px #00eaff22;
+  padding-bottom: 12vh;       /* keeps layout from touching footer */
 }
 
-#dealerPanel {
-  order: 1;
-}
-
-#playerPanel {
-  order: 2;
-}
-
-.bj-main-controls {
-  order: 3;
-  background: rgba(0, 5, 10, 0.70);
-  border-radius: 22px;
-  padding: 3rem 2.4rem;
-  width: 300px;
-  box-shadow:
-    0 0 30px #00131f inset,
-    0 0 16px #00eaff22;
+.blackjack-page-title {
   text-align: center;
+  width: 100%;
+  margin: 0 auto;
+  padding-top: 16vh;   /* pushes it under your fixed navbar */
+  margin-bottom: 1.5rem;
+  position: relative;
+  display: block;
+  z-index: 2;
+}
+
+
+/* --- Standardized Box Size for ALL Columns --- */
+.bj-panel,
+.bj-controls {
+  width: 360px;                /* FIXED WIDTH (no stretching) */
+  min-height: 420px;           /* FIXED HEIGHT (no jumping) */
+  background: rgba(0, 10, 20, 0.50);
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1.2px solid rgba(0,255,255,0.25);
+  box-shadow: 0 0 25px #00eaff55 inset;
   display: flex;
   flex-direction: column;
-  gap: 1.7rem;
+  align-items: center;
 }
 
-/* Cards */
+/* --- Titles --- */
+.bj-title {
+  font-family: "Audiowide";
+  font-size: 1.6rem;
+  margin-bottom: 1.2rem;
+  text-shadow: 0 0 18px #00eaff;
+}
+
+/* --- Cards Area (fixed space, won't expand the box) --- */
 .bj-cards {
+  width: 100%;
+  height: 150px;          /* FIXED HEIGHT so layout never changes */
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 1.3rem;
-  margin-top: 1rem;
+  gap: 0.7rem;
+  overflow: visible;
+  margin-bottom: 1rem;
 }
 
 .bj-card {
-  width: 78px;
-  height: 112px;
+  width: 92px;
+  height: 132px;
   border-radius: 14px;
-  background: #020e14;
-  border: 1.5px solid #00eaff88;
-  color: #c9faff;
-  font-size: 1.35rem;
+  background: rgba(0,0,0,0.55);
+  border: 1.6px solid rgba(0,255,255,0.45);
+  color: #e9faff;
+  font-size: 1.45rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-shadow: 0 0 12px #00eaff88;
-  box-shadow: 0 0 18px #00eaff33 inset;
+  text-shadow: 0 0 14px #00eaff88;
+  box-shadow: 0 0 20px #00eaff44 inset;
   transition: .18s ease;
 }
 
-.bj-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 0 20px #00eaffaa inset,
-    0 0 14px #00eaff55;
+.bj-cards {
+  width: 100%;
+  height: 190px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+}
+.bj-balance {
+  font-size: 1.05rem;
+  opacity: .8;
+  margin-bottom: .6rem;
+  color: #b8faff;
+  text-shadow: 0 0 8px #00eaff55;
 }
 
-/* Betting + Buttons */
-.bet-inline {
-  margin-bottom: 1.4rem;
+/* Score */
+.bj-score {
+  opacity: .85;
+  font-size: 1.1rem;
+}
+
+/* --- Controls Column --- */
+.bj-controls {
+  gap: 1rem;
+}
+
+.bet-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
 }
 
 .bet-input {
   width: 110px;
-  padding: 0.65rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #00eaff55;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
   background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,255,0.25);
   color: #e9faff;
   text-align: center;
 }
 
-.bj-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1.3rem;
-}
-
+/* Buttons */
 .play-btn {
-  background: #03141c;
-  color: #e9faff;
-  border: 1px solid #00eaffaa;
-  padding: 0.9rem 1.4rem;
-  font-size: 1.05rem;
-  font-weight: 600;
-  border-radius: 12px;
+  background: #06121e;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.8rem;
+  border-radius: 14px;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: 0.2s ease;
-  box-shadow: 0 0 14px #00eaff44 inset;
+  width: 100%;
+  max-width: 210px;
+  box-shadow: 0 0 18px #00eaff;
+  transition: .2s;
 }
 
 .play-btn:hover {
-  transform: translateY(-3px) scale(1.04);
-  box-shadow:
-    0 0 20px #00eaffaa inset,
-    0 0 18px #00eaff88;
-  background: #042331;
+  transform: scale(1.05);
+  box-shadow: 0 0 28px #00eaff, 0 0 42px #ff4df0;
+}
+
+.secondary {
+  background: rgba(0,25,35,0.7);
+}
+
+.bj-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+  align-items: center;
 }
 
 .bj-result {
-  margin-top: 2.3rem;
-  font-size: 1.35rem;
-  color: #d7faff;
+  min-height: 24px;
+  font-size: 1.1rem;
+  margin-top: 0.6rem;
 }
+
+
 
 /* SLOTS PAGE */
 .slots-page .slots-container { padding-top: 14vh; text-align: center; }
