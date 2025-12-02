@@ -1,39 +1,50 @@
-<div class="bg-layer neon-clouds"></div>
-<div class="bg-layer caustics"></div>
-<div class="bg-layer particles"></div>
-<div class="bg-layer glow-ripple"></div>
-<div class="bg-layer bloom-overlay"></div>
-<div class="bg-layer neon-dots"></div>
+<div id="auth-wrapper" class="register-page fade-in">
 
-<div class="center-stage login-entry">
-  <h1 class="logo-title stay">BETWISE</h1>
-  <p class="bw-slogan stay">Flow With The Odds</p>
+  {{#each backgroundLayers}} 
+    <div class="bg-layer {{this}}"></div> 
+  {{/each}}
 
-  <div class="login-center">
-    {{#if error}}
-      <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">{{message}}</div>
-    {{/if}}
+  <div class="auth-container">
 
-    <form id="registerForm" class="register-form" action="/register" method="post">
-      <div class="input-group">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" placeholder="Enter your username" required />
-      </div>
+    <h1 class="auth-logo">BETWISE</h1>
+    <p class="auth-tagline">Flow With The Odds</p>
 
-      <div class="input-group">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" placeholder="Enter your password" required
-        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
-        title="At least 8 characters, with uppercase, lowercase, a number, and a symbol." />
-      </div>
+    <div class="auth-card">
 
-      <button type="submit" class="enter-button">Register</button>
-    </form>
+      {{#if error}}
+        <div class="auth-error">{{message}}</div>
+      {{/if}}
 
-    <p class="login-footer-text">
-      Have an account? <a href="/login">Login</a>
-    </p>
+      <form class="auth-form" action="/register" method="post">
+
+        <div class="auth-input">
+          <label>First Name</label>
+          <input type="text" name="firstName" required>
+        </div>
+
+        <div class="auth-input">
+          <label>Email</label>
+          <input type="email" name="email" required>
+        </div>
+
+        <div class="auth-input">
+          <label>Username</label>
+          <input type="text" name="username" required>
+        </div>
+
+        <div class="auth-input">
+          <label>Password</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <button class="auth-primary-btn" type="submit">REGISTER</button>
+
+        <a href="/login" class="auth-secondary-btn" data-fade>
+          Back to Login
+        </a>
+
+      </form>
+    </div>
+
   </div>
 </div>
-
-<div id="page-transition" class="page-transition"></div>
