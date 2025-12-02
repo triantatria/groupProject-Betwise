@@ -25,6 +25,10 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/views/partials',
   defaultLayout: 'main',
 });
+hbs.handlebars.registerHelper('inc', function (value) {
+  return Number(value) + 1;
+});
+
 
 const dbConfig = {
   host: 'db',
@@ -791,17 +795,15 @@ app.get('/wallet', requireAuth, async (req, res) => {
   ];
 
   try {
-    const row = await db.one(
-      'SELECT balance FROM users WHERE user_id = $1',
-      [req.session.user.user_id]
-    );
-    req.session.user.balance = Number(row.balance);
+    const hello = await db.query(query);   // <-- FIXED
+    //const hello2 = result.rows; 
 
     const transactions = await getUserTransactions(req.session.user.user_id);
 
-    res.render('pages/wallet', {
-      title: 'Betwise — Wallet',
-      pageClass: 'wallet-page ultra-ink',
+    res.render('pages/leaderboard', {
+      hello,
+      title: 'Betwise — Leaderboard',
+      pageClass: 'leaderboard-page ultra-ink',
       backgroundLayers,
       siteName: 'BETWISE',
       user: req.session.user,
