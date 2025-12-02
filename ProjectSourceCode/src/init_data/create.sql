@@ -3,6 +3,9 @@
 -- Hash password for privacy
 CREATE TABLE IF NOT EXISTS users (
     user_id      BIGSERIAL PRIMARY KEY,
+    fname        VARCHAR(255) NOT NULL,
+    lname        VARCHAR(255) NOT NULL,
+    email        VARCHAR(255) NOT NULL,
     username     VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -276,7 +276,7 @@ app.get('/register', (req, res) => {
 
 // REGISTER HANDLER (supports JSON tests + normal HTML)
 app.post('/register', async (req, res) => {
-  let { username, password } = req.body;
+  let { fname, lname, email, username, password } = req.body;
 
   // Type check first (for tests)
   if (typeof username !== 'string' || typeof password !== 'string') {
@@ -329,11 +329,11 @@ app.post('/register', async (req, res) => {
 
     const hashed = await bcrypt.hash(cleanPassword, 10);
 
-    const user = await db.one(
-      `INSERT INTO users (username, password_hash)
-       VALUES ($1, $2)
-       RETURNING user_id, username, balance`,
-      [cleanUsername, hashed]
+    await db.one(
+      `INSERT INTO users (fname, lname, email, username, password_hash)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING user_id, username`,
+      [fname, lname, email, username, hashed]
     );
 
     // JSON callers (tests)
@@ -916,21 +916,32 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
 });
 
 // PROFILE (view-only)
-app.get('/profile', requireAuth, (req, res) => {
+app.get('/profile', requireAuth, async (req, res) => {
   const user = req.session.user;
 
-  const profileUser = {
+  /*const profileUser = {
     username: user.username,
     balance: typeof user.balance === 'number' ? user.balance : 0,
-  };
+    fname: user.fname,
+    lname: user.lname,
+    email: user.email,
+  };*/
+  try {
+    const prof = await db.one(
+      'SELECT * FROM users WHERE username = $1',
+      [user.username]
+    );
 
-  res.render('pages/profile', {
-    title: 'Profile',
-    pageClass: 'profile-page ultra-ink',
-    siteName: 'BETWISE',
-    backgroundLayers: defaultBackgroundLayers(true),
-    user: profileUser,
-  });
+    res.render('pages/profile', {
+      title: 'Profile',
+      pageClass: 'profile-page ultra-ink',
+      backgroundLayers: defaultBackgroundLayers(true),
+      prof,
+    });
+    }
+  catch{}
+
+  
 });
 
 // LOGOUT
