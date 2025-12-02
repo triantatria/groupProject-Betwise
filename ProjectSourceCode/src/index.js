@@ -379,13 +379,15 @@ app.post('/slots/spin', requireAuth, (req, res) => {
     payout = bet * 2;
   }
 
-  req.session.user.balance = req.session.user.balance - bet + payout;
+  const netWin = payout - bet; // how much the player actually profits
+  req.session.user.balance += netWin;
 
   res.json({
     reels,
-    payout,
+    payout: netWin,      // return net winnings
     newBalance: req.session.user.balance,
-  });
+});
+
 });
 
 // MINES
