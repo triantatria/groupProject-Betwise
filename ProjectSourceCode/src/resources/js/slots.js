@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resultEl.textContent = '';
     const bet = Number(betInput.value);
 
+    // Validate bet first
     if (!bet || bet <= 0) {
       resultEl.textContent = 'Enter a valid bet.';
       return;
@@ -67,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     spinBtn.disabled = true;
+
+    // Start animation and add CSS spin class
+    reelEls.forEach(el => el.classList.add('spin'));
     const timers = startAnimation();
 
     try {
@@ -88,27 +92,34 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       const { reels, payout, newBalance } = data;
 
-      // Stop reels one by one
+      // Smoothly stop reels one by one
       for (let i = 0; i < reelEls.length; i++) {
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 250)); // stagger stop
         clearInterval(timers[i]);
         reelEls[i].textContent = reels[i];
+        reelEls[i].classList.remove('spin'); // remove CSS spin class
       }
 
       // Update our local balance + nav header
       currentBalance = newBalance;
       updateHeaderBalance(newBalance);
 
-      resultEl.textContent =
-        payout > 0 ? `You won $${payout}!` : 'No win.';
+      resultEl.textContent = payout > 0
+        ? `You won $${payout}!`
+        : 'No win.';
+
     } catch (err) {
       console.error(err);
       resultEl.textContent = 'Network or server error.';
       timers.forEach(t => clearInterval(t));
     } finally {
       spinBtn.disabled = false;
+      // ensure all reels have spin class removed
+      reelEls.forEach(el => el.classList.remove('spin'));
     }
   });
+
+
 });
 
 // Rules <details> toggle text

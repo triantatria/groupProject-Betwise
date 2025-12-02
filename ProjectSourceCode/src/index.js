@@ -630,22 +630,15 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
     payout = bet * 2;
   }
 
-  const netDelta = -bet + payout;
-
-  const updatedUser = await recordTransaction(
-    req.session.user.user_id,
-    netDelta,
-    payout > 0 ? 'Slots Win' : 'Slots Spin',
-    `Slots spin bet=${bet}, payout=${payout}`
-  );
-
-  req.session.user.balance = updatedUser.balance;
+  const netWin = payout - bet; // how much the player actually profits
+  req.session.user.balance += netWin;
 
   res.json({
     reels,
-    payout,
+    payout: netWin,      // return net winnings
     newBalance: req.session.user.balance,
-  });
+});
+
 });
 
 // MINES
