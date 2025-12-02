@@ -1,35 +1,32 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
+{{>nav}}
 
-{{> nav }}
+<h2 class="blackjack-page-title section-title soft-glow">Blackjack</h2>
 
-<main class="blackjack-container fade-in">
-  <div class="bj-side">
-    
-    <section class="bj-panel dealer-zone glass-card">
-      <h2 class="bj-label">Dealer</h2>
-      <div class="bj-cards" id="dealerCards"></div>
-      <div class="bj-score" id="dealerScore">Score: —</div>
-    </section>
+<main class="blackjack-page blackjack-container fade-in">
+  <section class="bj-panel glass-card" id="dealerPanel">
+    <h2 class="bj-title">Dealer</h2>
+    <div class="bj-cards" id="dealerCards"></div>
+    <div class="bj-score" id="dealerScore">Score: —</div>
+  </section>
 
-    <section class="bj-panel player-zone glass-card">
-      <h2 class="bj-label">You</h2>
-      <div class="bj-cards" id="playerCards"></div>
-      <div class="bj-score" id="playerScore">Score: —</div>
-    </section>
+  <section class="bj-panel player-zone glass-card">
+    <h2 class="bj-title">You</h2>
+    <p class="bj-balance">Balance: ${{user.balance}}</p>
 
-  </div>
+    <div class="bj-cards" id="playerCards"></div>
+    <div class="bj-score" id="playerScore">Score: —</div>
+  </section>
 
-  <aside class="bj-main-controls glass-card">
-    <div class="bet-inline">
+
+  <aside class="bj-controls glass-card">
+    <div class="bet-row">
       <label for="bjBet">Bet:</label>
-      <input type="number" placeholder="0.00" class="bet-input" id="bjBet" min="0" step="1">
+      <input type="number" id="bjBet" class="bet-input" placeholder="0.00" min="0" step="1">
     </div>
 
-    <button onclick="console.log("clicked")" class="play-btn" id="bjDealBtn">DEAL</button>
+    <button id="bjDealBtn" class="play-btn">DEAL</button>
 
-    <div class="bj-actions" id="bjActionButtons">
+    <div class="bj-action-buttons" id="bjActionButtons">
       <button class="play-btn secondary" id="bjHitBtn">Hit</button>
       <button class="play-btn secondary" id="bjStandBtn">Stand</button>
       <button class="play-btn secondary" id="bjDoubleBtn">Double</button>
@@ -39,8 +36,4 @@
   </aside>
 </main>
 
-<footer class="footer-panel glass-subtle">
-  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
-</footer>
-
-<script src="resources/js/blackjack.js"></script>
+<script src="/resources/js/blackjack.js"></script>

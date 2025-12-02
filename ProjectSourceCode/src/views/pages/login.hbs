@@ -1,36 +1,51 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
+<div id="auth-wrapper" class="login-page fade-in">
 
-<div class="center-stage login-entry">
-  <h1 class="logo-title stay">{{titleText}}</h1>
-  <p class="bw-slogan stay">{{subtitleText}}</p>
+  {{#each backgroundLayers}} 
+    <div class="bg-layer {{this}}"></div> 
+  {{/each}}
 
-  <div class="login-center">
-    {{#if error}}
-      <div class="login-error" style="color:#ffb3c6;margin-bottom:12px;">
-        {{message}}
-      </div>
-    {{/if}}
+  <div class="fish-swarm">
+    <img src="/resources/images/fish.png" class="fish f1">
+    <img src="/resources/images/fish.png" class="fish f2">
+    <img src="/resources/images/fish.png" class="fish f3">
+    <img src="/resources/images/fish.png" class="fish f4">
+    <img src="/resources/images/fish.png" class="fish f5">
+    <img src="/resources/images/fish.png" class="fish f6">
+    <img src="/resources/images/fish.png" class="fish f7">
+    <img src="/resources/images/fish.png" class="fish f8">
+  </div>
 
-    <form class="login-form" action="/login" method="post">
-      <div class="input-group">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" placeholder="Enter your username" required />
-      </div>
+  <div class="auth-container">
 
-      <div class="input-group">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" placeholder="Enter your password" required />
-      </div>
+    <h1 class="auth-logo">BETWISE</h1>
+    <p class="auth-tagline">Flow With The Odds</p>
 
-      <button type="submit" class="enter-button">Log In</button>
-    </form>
+    <div class="auth-card">
 
-    <p class="login-footer-text">
-      Don’t have an account? <a href="/register">Sign up</a>
-    </p>
+      {{#if error}}
+        <div class="auth-error">{{message}}</div>
+      {{/if}}
+
+      <form class="auth-form" action="/login" method="post">
+
+        <div class="auth-input">
+          <label>Username</label>
+          <input type="text" name="username" required>
+        </div>
+
+        <div class="auth-input">
+          <label>Password</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <button class="auth-primary-btn" type="submit">LOG IN</button>
+
+        <a href="/register" class="auth-secondary-btn" data-fade>
+          Create Account
+        </a>
+
+      </form>
+    </div>
+
   </div>
 </div>
-
-<div id="page-transition" class="page-transition"></div>

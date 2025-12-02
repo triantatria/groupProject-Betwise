@@ -176,8 +176,8 @@ function renderLoginPage(res, extra = {}) {
     backgroundLayers,
     titleText: 'BETWISE',
     subtitleText: 'Flow With The Odds',
-    ...extra,
     hideFooter: true,
+    ...extra
   });
 }
 
@@ -269,8 +269,8 @@ app.get('/register', (req, res) => {
   res.render('pages/register', {
     title: 'Register',
     pageClass: 'register-page',
-    backgroundLayers,
     hideFooter: true,
+    backgroundLayers
   });
 });
 
@@ -315,7 +315,6 @@ app.post('/register', async (req, res) => {
     );
 
     if (existing) {
-      // For tests, they just care about "Invalid input" on JSON
       if (req.is('application/json')) {
         return res.status(400).json({ message: 'Invalid input' });
       }
@@ -337,19 +336,17 @@ app.post('/register', async (req, res) => {
       [cleanUsername, hashed]
     );
 
-    // For JSON (tests): return 302 + JSON body
+    // JSON callers (tests)
     if (req.is('application/json')) {
       return res.status(200).json({ message: 'Success' });
     }
 
-    // Normal browser: log in and redirect
-    req.session.user = {
-      user_id: user.user_id,
-      username: user.username,
-      balance: user.balance,
-    };
+    //No auto-login, show login page with success message
+    return renderLoginPage(res, {
+      success: true,
+      message: 'Account created. Please log in.',
+    });
 
-    return res.redirect('/transition');
   } catch (err) {
     console.error('Registration error:', err);
     if (req.is('application/json')) {
@@ -379,8 +376,20 @@ app.get('/transition', requireAuth, (req, res) => {
     pageClass: 'transition-page',
     siteName: 'BETWISE',
     backgroundLayers,
-    user: req.session.user,
-    hideFooter: true,
+    hideFooter: true, 
+    user: req.session.user
+  });
+});
+
+app.get('/about', (req, res) => {
+  const backgroundLayers = defaultBackgroundLayers(true);
+
+  res.render('pages/about', {
+    title: 'About Betwise',
+    pageClass: 'about-page ultra-ink',
+    backgroundLayers,
+    siteName: "BETWISE",
+    hideFooter: false
   });
 });
 
@@ -744,19 +753,27 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
 
 // LEADERBOARD (placeholder)
 app.get('/leaderboard', requireAuth, async (req, res) => {
+
   const rawLeaderboard = [
-    { rank: 1, username: 'fish', balance: 12500, status: 'Legend' },
-    { rank: 2, username: 'this fish', balance: 11340, status: 'Diamond' },
-    { rank: 3, username: 'that fish', balance: 9980, status: 'Platinum' },
-    { rank: 4, username: 'other fish', balance: 8740, status: 'Gold' },
-    { rank: 5, username: 'yay fish!', balance: 8210, status: 'Gold' },
+    { rank: 1, username: 'fish', balance: 12500 },
+    { rank: 2, username: 'this fish', balance: 11340 },
+    { rank: 3, username: 'that fish', balance: 9980 },
+    { rank: 4, username: 'other fish', balance: 8740 },
+    { rank: 5, username: 'yay fish!', balance: 8210 },
   ];
 
-  const maxScore = Math.max(...rawLeaderboard.map(p => p.balance));
+  function balanceTier(balance) {
+    if (balance >= 10000) return "legend";
+    if (balance >= 7000) return "diamond";
+    if (balance >= 5000) return "platinum";
+    if (balance >= 3000) return "gold";
+    if (balance >= 1500) return "silver";
+    return "bronze";
+  }
 
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.balance / maxScore) * 100),
+    tierClass: balanceTier(p.balance)
   }));
 
   res.render('pages/leaderboard', {
@@ -767,9 +784,11 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
     user: req.session.user,
     leaderboard,
   });
+
 });
 
-// WALLET
+
+// WALLET (placeholder)
 app.get('/wallet', requireAuth, async (req, res) => {
   const backgroundLayers = [
     'neon-clouds dim',
@@ -915,6 +934,7 @@ app.get('/profile', requireAuth, (req, res) => {
   res.render('pages/profile', {
     title: 'Profile',
     pageClass: 'profile-page ultra-ink',
+    siteName: 'BETWISE',
     backgroundLayers: defaultBackgroundLayers(true),
     user: profileUser,
   });
