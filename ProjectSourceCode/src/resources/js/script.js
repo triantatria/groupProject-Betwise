@@ -34,6 +34,26 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/* Register Tranistion */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const wrapper = document.getElementById("auth-wrapper");
+
+  wrapper.classList.add("fade-in");
+
+  document.querySelectorAll("a[data-fade]").forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      wrapper.classList.remove("fade-in");
+      wrapper.classList.add("fade-out");
+
+      setTimeout(() => {
+        window.location = link.href;
+      }, 280);
+    });
+  });
+});
+
 /* Mines */
 /*const grid = document.getElementById("minesGrid");
 if (grid) {

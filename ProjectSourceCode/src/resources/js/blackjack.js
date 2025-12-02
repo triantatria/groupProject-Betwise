@@ -9,6 +9,17 @@ const Blackjack = (() => {
     club: '♣'
   };
 
+  let currentBet = 0;
+
+  function updateHeaderBalance(newBalance) {
+    const el = document.getElementById('balance');
+    const n = Number(newBalance);
+    if (el && Number.isFinite(n)) {
+      el.textContent = `$${n}`;
+    }
+  }
+
+
   let deck = [];
   let playerHand = [];
   let dealerHand = [];
@@ -119,14 +130,33 @@ const Blackjack = (() => {
 
   // Game Flow
 
-  function startRound() {
+  async function startRound() {
     resultTextEl.textContent = '';
     const bet = Number(betInput.value) || 0;
     if (bet <= 0) {
-      resultTextEl.textContent = 'Enter a bet before you play';
+      resultTextEl.textContent = 'Enter in a valid bet before you play';
       return;
     }
+    try {
+      const res = await fetch('/blackjack/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bet })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error || !data.ok) {
+        console.error('Blackjack start payload: ', data);
+        resultTextEl.textContent = data.error || 'Error placing bet';
+        return;
+      }
+      currentBet = bet;
+      updateHeaderBalance(data.newBalance);
 
+    } catch (err) {
+      console.error('Blackjack start error: ', err);
+      resultTextEl.textContent = 'Network error starting Blackjack round';
+      return;
+    }
     deck = buildDeck();
     shuffle(deck);
     playerHand = [];
@@ -168,7 +198,7 @@ const Blackjack = (() => {
     }
   }
 
-  function endRound() {
+  async function endRound() {
     if (!roundActive) return;
 
     dealerHidden = false;
@@ -179,23 +209,56 @@ const Blackjack = (() => {
     }
     updateUI();
 
+
     const dealerTotal = handValue(dealerHand);
     let msg = '';
+    let result = 'loss';
+    let netPayout = 0;
 
+    // determine outcome
     if (playerTotal > 21) {
       msg = 'You Busted. Dealer Wins!';
+      result = 'loss';
+      netPayout = 0;
     } else if (dealerTotal > 21) {
       msg = "Dealer Busted. You Win!";
+      result = 'win';
+      netPayout = currentBet * 2;
     } else if (playerTotal > dealerTotal) {
       msg = 'You Win!';
+      result = 'win';
+      netPayout = currentBet * 2;
     } else if (playerTotal < dealerTotal) {
       msg = 'Dealer Wins!';
+      result = 'loss';
+      netPayout = 0;
     } else {
       msg = 'Push (tie).';
+      result = 'push';
+      netPayout = currentBet;
     }
 
     resultTextEl.textContent = msg;
     setButtonsForRound(false);
+
+    // inform server of round result/tell server to settle round
+    try {
+      const res = await fetch('/blackjack/settle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result, netPayout })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error || !data.ok) {
+        console.error('Blackjack settle payload: ', data);
+        return;
+      }
+      updateHeaderBalance(data.newBalance);
+
+    } catch (err) {
+      console.error('Blackjack settle error: ', err);
+      return;
+    }
   }
 
   function playerStand() {
@@ -204,11 +267,41 @@ const Blackjack = (() => {
   }
 
   // double only allowed on the starting hand
-  function playerDouble() {
+  async function playerDouble() {
     if (!roundActive || playerHand.length !== 2) return;
 
-    const currentBet = Number(betInput.value) || 0;
-    betInput.value = currentBet * 2;
+    const extraBet = currentBet || Number(betInput.value) || 0;
+    if (extraBet <= 0) {
+      resultTextEl.textContent = 'Cannot double with zero bet';
+      return;
+    }
+
+    //Ask server to subtract extra bet
+    try {
+      const res = await fetch('/blackjack/double', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ extraBet })
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error || !data.ok) {
+        console.error('Blackjack double bet payload: ', data);
+        resultTextEl.textContent = data.error || 'Error placing double bet';
+        return;
+      }
+
+      //Server accepted extra bet
+      currentBet += extraBet;
+      betInput.value = currentBet;
+      updateHeaderBalance(data.newBalance);
+
+
+    } catch (err) {
+      console.error('Blackjack double fetch error: ', err);
+      resultTextEl.textContent = 'Network error placing double bet';
+      return;
+    }
 
     playerHand.push(dealCard());
     updateUI();
@@ -226,17 +319,17 @@ const Blackjack = (() => {
     const blackjackMain = document.querySelector('.blackjack-container');
     if (!blackjackMain) return;
 
-    dealerCardsEl  = document.getElementById("dealerCards");
-    dealerScoreEl  = document.getElementById("dealerScore");
-    playerCardsEl  = document.getElementById("playerCards");
-    playerScoreEl  = document.getElementById("playerScore");
-    betInput       = document.getElementById("bjBet");
-    dealBtn        = document.getElementById("bjDealBtn");
-    standBtn       = document.getElementById("bjStandBtn");
-    doubleBtn      = document.getElementById("bjDoubleBtn");
-    hitBtn         = document.getElementById("bjHitBtn");
-    resultTextEl   = document.getElementById("bjResultText");
-    actionBar      = document.getElementById("bjActionButtons");
+    dealerCardsEl = document.getElementById("dealerCards");
+    dealerScoreEl = document.getElementById("dealerScore");
+    playerCardsEl = document.getElementById("playerCards");
+    playerScoreEl = document.getElementById("playerScore");
+    betInput = document.getElementById("bjBet");
+    dealBtn = document.getElementById("bjDealBtn");
+    standBtn = document.getElementById("bjStandBtn");
+    doubleBtn = document.getElementById("bjDoubleBtn");
+    hitBtn = document.getElementById("bjHitBtn");
+    resultTextEl = document.getElementById("bjResultText");
+    actionBar = document.getElementById("bjActionButtons");
 
     if (!dealBtn || !dealerCardsEl || !playerCardsEl) return;
 
