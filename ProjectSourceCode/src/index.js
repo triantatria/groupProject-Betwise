@@ -302,9 +302,9 @@ app.get('/about', (req, res) => {
 // HOME PAGE
 app.get('/home', requireAuth, (req, res) => {
   const games = [
-    { name: 'Slots', description: 'Spin the reels and test your luck!', tag: 'Classic', route: '/slots' },
-    { name: 'Blackjack', description: 'Beat the dealer and hit 21.', tag: 'Card Game', route: '/blackjack' },
-    { name: 'Mines', description: 'Choose wisely and avoid the bombs!', tag: 'Strategy', route: '/mines' },
+    { name: 'Slots', description: 'Spin the reels and test your luck!', tag: 'Classic', route: '/slots', image: '/resources/images/slotsFishImage.png' },
+    { name: 'Blackjack', description: 'Beat the dealer and hit 21.', tag: 'Card Game', route: '/blackjack', image: '/resources/images/blackjackFishImage.png' },
+    { name: 'Mines', description: 'Choose wisely and avoid the bombs!', tag: 'Strategy', route: '/mines', image: '/resources/images/minesFishImage.png' },
   ];
 
   const backgroundLayers = defaultBackgroundLayers(true);
