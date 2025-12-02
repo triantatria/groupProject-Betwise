@@ -1070,7 +1070,9 @@ details[open] .rules-summary {
   100% { transform: translate(150vw,110vh) scaleX(-1); }
 }
 
-/* LEADERBOARD PAGE */
+/* ============================================
+   LEADERBOARD PAGE
+   ============================================ */
 
 .leaderboard-area {
   position: relative;
@@ -1097,10 +1099,10 @@ details[open] .rules-summary {
 /* Header Row */
 .leaderboard-header {
   display: grid;
-  grid-template-columns: 120px 1.5fr 1.3fr 0.9fr;
+  grid-template-columns: 150px 1fr 200px;
   padding: 1rem 2rem;
   align-items: center;
-  text-align: left;
+  gap: 2rem;
 
   font-family: "Audiowide";
   font-size: 1.05rem;
@@ -1109,25 +1111,34 @@ details[open] .rules-summary {
   border-bottom: 1px solid rgba(255,255,255,.1);
 }
 
-.col-rank, .col-user, .col-score, .col-status {
+.col-rank {
+  text-align: left;
+  opacity: 0.9;
+}
+
+.col-user {
+  text-align: left;
+  opacity: 0.9;
+}
+
+.col-score {
+  text-align: right;
   opacity: 0.9;
 }
 
 /* Each Row */
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 120px 1.5fr 1.2fr 1fr;
+  grid-template-columns: 150px 1fr 200px;
   padding: 1rem 2rem;
   align-items: center;
-  text-align: left;
+  gap: 2rem;
 
   background: rgba(0, 15, 25, 0.45);
   border-bottom: 1px solid rgba(255,255,255,.08);
-
-  transition:
-    background .25s ease,
-    box-shadow .25s ease,
-    transform .25s ease;
+  transition: background .25s ease,
+              box-shadow .25s ease,
+              transform .25s ease;
 }
 
 .leaderboard-row:last-child {
@@ -1143,11 +1154,12 @@ details[open] .rules-summary {
   border-radius: 12px;
 }
 
-/* Rank Numbers */
+/* Rank Numbers - LEFT ALIGNED */
 .rank-big {
   font-family: "Audiowide";
   font-size: 1.7rem;
   opacity: .95;
+  text-align: left;
 }
 
 .rank-1 {
@@ -1165,10 +1177,11 @@ details[open] .rules-summary {
   text-shadow: 0 0 14px #cd7f3288;
 }
 
-/* USER CELL */
+/* USER CELL - LEFT ALIGNED SO NAMES LINE UP */
 .user-cell {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 12px;
 }
 
@@ -1188,6 +1201,7 @@ details[open] .rules-summary {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .avatar-fallback {
@@ -1196,47 +1210,13 @@ details[open] .rules-summary {
   font-family: "Audiowide";
 }
 
-/* BALANCE CELL (used to be score cell) */
+/* BALANCE CELL - RIGHT ALIGNED */
 .score-cell {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-right: 14px;  /* fixes the spacing issue */
+  justify-content: flex-end;
+  align-items: center;
 }
 
-.score-text {
-  font-size: 1rem;
-  opacity: .9;
-}
-
-/* Progress Bar */
-.score-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(255,255,255,.12);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.score-fill {
-  height: 100%;
-  background: #00eaff;
-  box-shadow:
-    0 0 10px #00eaffaa,
-    0 0 14px #00eaffaa inset;
-  transition: width .45s cubic-bezier(.17,.67,.32,1.25);
-}
-
-.leaderboard-row:hover .score-fill {
-  animation: pulseXP 1.3s ease-in-out infinite alternate;
-}
-
-@keyframes pulseXP {
-  from { box-shadow: 0 0 10px #00eaffaa; }
-  to   { box-shadow: 0 0 18px #00eaff; }
-}
-
-/* TIER BADGES */
 .status-badge {
   padding: 0.45rem 0.8rem;
   border-radius: 8px;
@@ -1246,12 +1226,39 @@ details[open] .rules-summary {
   text-transform: uppercase;
   border: 1px solid;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
-.tier-Legend   { color: #00eaff; border-color: #00eaff88; }
-.tier-Diamond  { color: #6ee8ff; border-color: #6ee8ff88; }
-.tier-Platinum { color: #bfe7ff; border-color: #bfe7ff66; }
-.tier-Gold     { color: #e5c55a; border-color: #e5c55a66; }
+/* Subtle tier colors */
+.tier-legend {
+  color: #00eaff;
+  border-color: #00eaff88;
+}
+
+.tier-diamond {
+  color: #6ee8ff;
+  border-color: #6ee8ff88;
+}
+
+.tier-platinum {
+  color: #bfe7ff;
+  border-color: #bfe7ff66;
+}
+
+.tier-gold {
+  color: #e5c55a;
+  border-color: #e5c55a66;
+}
+
+.tier-silver {
+  color: #d0dde9;
+  border-color: #d0dde988;
+}
+
+.tier-bronze {
+  color: #d49a6a;
+  border-color: #d49a6a88;
+}
 
 /* WALLET PAGE */
 .wallet-area {

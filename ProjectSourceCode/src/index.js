@@ -401,19 +401,27 @@ app.get('/mines', requireAuth, (req, res) => {
 
 // LEADERBOARD (placeholder)
 app.get('/leaderboard', requireAuth, async (req, res) => {
+
   const rawLeaderboard = [
-    { rank: 1, username: 'fish', balance: 12500, status: 'Legend' },
-    { rank: 2, username: 'this fish', balance: 11340, status: 'Diamond' },
-    { rank: 3, username: 'that fish', balance: 9980, status: 'Platinum' },
-    { rank: 4, username: 'other fish', balance: 8740, status: 'Gold' },
-    { rank: 5, username: 'yay fish!', balance: 8210, status: 'Gold' },
+    { rank: 1, username: 'fish', balance: 12500 },
+    { rank: 2, username: 'this fish', balance: 11340 },
+    { rank: 3, username: 'that fish', balance: 9980 },
+    { rank: 4, username: 'other fish', balance: 8740 },
+    { rank: 5, username: 'yay fish!', balance: 8210 },
   ];
 
-  const maxScore = Math.max(...rawLeaderboard.map(p => p.balance));
+  function balanceTier(balance) {
+    if (balance >= 10000) return "legend";
+    if (balance >= 7000) return "diamond";
+    if (balance >= 5000) return "platinum";
+    if (balance >= 3000) return "gold";
+    if (balance >= 1500) return "silver";
+    return "bronze";
+  }
 
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.balance / maxScore) * 100),
+    tierClass: balanceTier(p.balance)
   }));
 
   res.render('pages/leaderboard', {
@@ -424,7 +432,9 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
     user: req.session.user,
     leaderboard,
   });
+
 });
+
 
 // WALLET (placeholder)
 app.get('/wallet', requireAuth, async (req, res) => {

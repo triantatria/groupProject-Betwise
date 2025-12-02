@@ -13,7 +13,6 @@
       <span class="col-rank">Rank</span>
       <span class="col-user">Player</span>
       <span class="col-score">Balance</span>
-      <span class="col-status">Tier</span>
     </div>
 
     {{#each leaderboard}}
@@ -35,15 +34,9 @@
       </div>
 
       <div class="score-cell">
-        <span class="score-text">${{balance}}</span>
-
-        <div class="score-bar">
-          <div class="score-fill" style="width: {{progress}}%;"></div>
-        </div>
-      </div>
-
-      <div class="status-badge tier-{{status}}">
-        {{status}}
+        <span class="status-badge tier-{{tierClass}}">
+          ${{balance}}
+        </span>
       </div>
 
     </div>
@@ -51,7 +44,3 @@
 
   </div>
 </section>
-
-<footer class="footer-panel glass-subtle">
-  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
-</footer>
