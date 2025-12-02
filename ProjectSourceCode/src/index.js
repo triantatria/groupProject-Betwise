@@ -246,7 +246,7 @@ app.post('/register', async (req, res) => {
       [username, hashed]
     );
 
-    // 🎉 NO auto-login — redirect user back to login
+    // NO auto-login — redirect user back to login
     return renderLoginPage(res, {
       success: true,
       message: 'Account created. Please log in.',
@@ -280,6 +280,18 @@ app.get('/transition', requireAuth, (req, res) => {
     backgroundLayers,
     hideFooter: true, 
     user: req.session.user
+  });
+});
+
+app.get('/about', (req, res) => {
+  const backgroundLayers = defaultBackgroundLayers(true);
+
+  res.render('pages/about', {
+    title: 'About Betwise',
+    pageClass: 'about-page ultra-ink',
+    backgroundLayers,
+    siteName: "BETWISE",
+    hideFooter: false
   });
 });
 
@@ -451,6 +463,7 @@ app.get('/profile', requireAuth, (req, res) => {
   res.render('pages/profile', {
     title: 'Profile',
     pageClass: 'profile-page ultra-ink',
+    siteName: 'BETWISE',
     backgroundLayers: defaultBackgroundLayers(true),
     user: profileUser,
   });
