@@ -5,14 +5,7 @@
 <div class="bg-layer bloom-overlay"></div>
 <div class="bg-layer neon-dots"></div>
 
-<nav class="nav-full glass-subtle">
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">BETWISE</div>
-  <div class="nav-links">
-    <a href="/profile" class="nav-item">Profile</a>
-    <a href="#" class="nav-item">Leaderboard</a>
-    <a href="#" class="nav-item wallet">Wallet ▾</a>
-  </div>
-</nav>
+{{> nav}}
 <div class="center-stage login-entry" 
      style="min-height: calc(100vh - 100px); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 20px;">
   <p class="profile-title">Your Profile</p>
@@ -32,10 +25,10 @@
        z-index: 1;
      ">
     <div class="profile-info" style="text-align: left; gap: 1rem; display: flex; flex-direction: column; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 12px;">
-      <p><strong>Username:</strong> {{user.username}}</p>
-      <p><strong>Full Name:</strong> {{user.fname}} {{user.lname}}</p>
-      <p><strong>Email:</strong> {{user.email}}</p>
-      <p><strong>Credits:</strong> {{user.credits}}</p>
+      <p><strong>Username:</strong> {{prof.username}}</p>
+      <p><strong>Full Name:</strong> {{prof.fname}} {{prof.lname}}</p>
+      <p><strong>Email:</strong> {{prof.email}}</p>
+      <p><strong>Credits:</strong> {{prof.credits}}</p>
     </div>
 
     <div class="profile-actions">
@@ -49,4 +42,3 @@
 
 
 <div id="page-transition" class="page-transition"></div>
-

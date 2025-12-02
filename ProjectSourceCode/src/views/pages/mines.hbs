@@ -1,30 +1,47 @@
-{{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
-{{/each}}
+{{>nav}}
 
-{{> nav }}
+<div class="mines-page">
 
-<main class="mines-container fade-in">
-  <div class="mines-side glass-card">
-    <h2 class="mines-title">MINES</h2>
+    <h1 class="mines-title soft-glow">MINES</h1>
 
-    <div class="bet-panel">
-      <label>Bet Amount</label>
-      <input type="number" placeholder="0.00" class="bet-input" />
+    <div class="mines-container">
 
-      <label>Number of Mines</label>
-      <input type="number" min="1" max="15" value="3" class="bet-input" />
+        <!-- LEFT PANEL -->
+        <div class="mines-panel glass-card">
 
-      <button class="play-btn wide" id="startMinesBtn">Start Game</button>
-      <button class="cashout-btn hidden" id="cashoutBtn">Cashout</button>
+            <div class="mines-balance">Balance: ${{balance}}</div>
+
+            <label class="mines-label">Bet Amount</label>
+            <input 
+                type="number"
+                id="minesBetInput"
+                class="mines-input"
+                min="1"
+                placeholder="Enter bet"
+            />
+
+            <label class="mines-label">Number of Mines</label>
+            <input 
+                type="number"
+                id="minesCountInput"
+                class="mines-input"
+                min="1"
+                max="24"
+                placeholder="e.g. 3"
+            />
+
+            <button id="startMinesBtn" class="mines-btn">Start Game</button>
+            <button id="cashoutBtn" class="mines-btn hidden">Cash Out</button>
+
+            <div id="minesStatus" class="mines-status"></div>
+        </div>
+
+        <!-- RIGHT PANEL (GRID) -->
+        <div class="mines-grid-panel glass-card">
+            <div id="minesGrid"></div>
+        </div>
+
     </div>
-  </div>
+</div>
 
-  <div class="mines-grid glass-card">
-    <div id="minesGrid"></div>
-  </div>
-</main>
-
-<footer class="footer-panel glass-subtle">
-  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
-</footer>
+<script src="/resources/js/mines.js"></script>

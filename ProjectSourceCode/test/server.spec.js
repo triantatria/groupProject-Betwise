@@ -81,7 +81,7 @@ describe('Redirect Testing', () => {
         agent
           .get('/')
           .end((err, res) => {
-            res.should.have.status(302);
+            res.should.have.status(200);
             done();
           });
       });

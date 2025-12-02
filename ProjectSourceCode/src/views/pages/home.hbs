@@ -10,7 +10,8 @@
   <div class="game-grid">
     {{#each games}}
     <div class="game-card glass-card deep">
-      <div class="card-img blank"></div>
+      <div class="card-img" style="background-image: url('{{image}}');"></div>
+
       <div class="card-body">
         <h3>{{name}}</h3>
         <p>{{description}}</p>
@@ -24,7 +25,3 @@
   </div>
 
 </section>
-
-<footer class="footer-panel glass-subtle">
-  <p>21+ • Gamble responsibly • Support • Terms • Privacy</p>
-</footer>

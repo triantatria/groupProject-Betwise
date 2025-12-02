@@ -1,11 +1,10 @@
 <nav class="nav-full glass-subtle">
-
-  <div class="nav-logo big" onclick="location.href='/home'" style="cursor:pointer;">
+  <div class="nav-logo big" onclick="location.href='/home'">
     {{siteName}}
   </div>
 
   <div class="nav-links">
-    <a href="#" class="nav-item">Profile</a>
+    <a href="/profile" class="nav-item">Profile</a>
     <a href="/leaderboard" class="nav-item">Leaderboard</a>
 
     <div class="wallet-dropdown">
@@ -13,11 +12,9 @@
 
       <div class="wallet-card glass-float">
         <p class="wc-label">Current Balance</p>
-        <h3 class="wc-balance">${{balance}}</h3>
-
+        <h3 id="balance" class="wc-balance">${{balance}}</h3>
         <a href="/wallet" class="wc-link">Open Wallet →</a>
       </div>
     </div>
   </div>
-
 </nav>
