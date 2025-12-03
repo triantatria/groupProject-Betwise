@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS slots_leaderboard(
     best_score INT NOT NULL DEFAULT 0 CHECK (best_score >= 0),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
+*/
 -- Log all balance changes (wins/losses + wallet adds)
 CREATE TABLE IF NOT EXISTS transactions (
   transaction_id BIGSERIAL PRIMARY KEY,
@@ -51,4 +51,3 @@ CREATE TABLE IF NOT EXISTS transactions (
   description    TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-*/
