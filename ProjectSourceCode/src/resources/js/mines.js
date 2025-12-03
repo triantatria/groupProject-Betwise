@@ -6,14 +6,22 @@ let safeRevealed = 0;       // number of safe tiles clicked this round
 let totalSafeTiles = 0;     // GRID_SIZE - numMines for this round
 
 function updateHeaderBalance(newBalance) {
-  const balanceEl = document.getElementById('balance');
-  if (!balanceEl) return;
-
   const n = Number(newBalance);
-  if (!Number.isFinite(n)) return; // don't overwrite with NaN, null, etc.
+  if (!Number.isFinite(n)) return;
 
-  balanceEl.textContent = `$${n}`;
+  // Update global/nav balance if present
+  const balanceEl = document.getElementById('balance');
+  if (balanceEl) {
+    balanceEl.textContent = `$${n}`;
+  }
+
+  // Update Mines page balance if present
+  const minesBalanceEl = document.getElementById('minesBalanceValue');
+  if (minesBalanceEl) {
+    minesBalanceEl.textContent = `${n}`; // or `$${n}` if you want
+  }
 }
+
 
 
 const Mines = (() => {

@@ -11,7 +11,10 @@
 
   <section class="bj-panel player-zone glass-card">
     <h2 class="bj-title">You</h2>
-    <p class="bj-balance">Balance: ${{user.balance}}</p>
+    <p class="bj-balance">
+      Balance: $
+      <span id="bjBalanceValue">{{user.balance}}</span>
+    </p>
 
     <div class="bj-cards" id="playerCards"></div>
     <div class="bj-score" id="playerScore">Score: —</div>

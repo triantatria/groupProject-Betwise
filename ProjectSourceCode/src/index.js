@@ -77,26 +77,26 @@ function requireAuth(req, res, next) {
 function friendlyType(code) {
   switch (code) {
     // Wallet
-    case 'wallet_add':       return 'Add Credits';
+    case 'wallet_add': return 'Add Credits';
 
     // Slots
-    case 'Slots Spin':       return 'Slots Spin';
-    case 'Slots Win':        return 'Slots Win';
-    case 'slots':            return 'Slots Spin';    // legacy code type
+    case 'Slots Spin': return 'Slots Spin';
+    case 'Slots Win': return 'Slots Win';
+    case 'slots': return 'Slots Spin';    // legacy code type
 
     // Blackjack
-    case 'Blackjack Bet':    return 'Blackjack Bet';
-    case 'Blackjack Win':    return 'Blackjack Win';
-    case 'Blackjack Loss':   return 'Blackjack Loss';
-    case 'Blackjack Push':   return 'Blackjack Push (Tie)';
+    case 'Blackjack Bet': return 'Blackjack Bet';
+    case 'Blackjack Win': return 'Blackjack Win';
+    case 'Blackjack Loss': return 'Blackjack Loss';
+    case 'Blackjack Push': return 'Blackjack Push (Tie)';
     case 'Blackjack Double': return 'Blackjack Double Down';
     case 'Blackjack Result': return 'Blackjack Result';
 
     // Mines
-    case 'Mines Bet':        return 'Mines Bet';
-    case 'Mines Win':        return 'Mines Win';
-    case 'Mines Loss':       return 'Mines Loss';
-    case 'Mines Cashout':    return 'Mines Cashout';
+    case 'Mines Bet': return 'Mines Bet';
+    case 'Mines Win': return 'Mines Win';
+    case 'Mines Loss': return 'Mines Loss';
+    case 'Mines Cashout': return 'Mines Cashout';
 
     default:
       return code; // fallback: show raw type string
@@ -240,6 +240,7 @@ app.post('/login', async (req, res) => {
       user_id: user.user_id,
       username: user.username,
       balance: user.balance || 0,
+      wins: user.wins || 0
     };
 
     // For JSON callers (tests), just send OK; for browser, redirect
@@ -376,7 +377,7 @@ app.get('/transition', requireAuth, (req, res) => {
     pageClass: 'transition-page',
     siteName: 'BETWISE',
     backgroundLayers,
-    hideFooter: true, 
+    hideFooter: true,
     user: req.session.user
   });
 });
@@ -419,13 +420,17 @@ app.get('/home', requireAuth, (req, res) => {
 
 // Transaction helper: record a balance change and log it
 async function recordTransaction(userId, deltaAmount, type, description = '') {
+  //Determine if this is a win (increment wins count)
+  const addWin = type.includes('Win') ? 1 : 0;
+
   return db.tx(async t => {
     const user = await t.one(
       `UPDATE users
-       SET balance = balance + $1
-       WHERE user_id = $2
+       SET balance = balance + $1,
+       wins = wins + $2
+       WHERE user_id = $3
        RETURNING user_id, username, balance`,
-      [deltaAmount, userId]
+      [deltaAmount, addWin, userId]
     );
 
     await t.none(
@@ -460,7 +465,7 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
 
   try {
     const freshUser = await db.one(
-      'SELECT user_id, balance FROM users WHERE user_id = $1',
+      'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
       [user.user_id]
     );
 
@@ -476,6 +481,7 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
     );
 
     req.session.user.balance = updatedUser.balance;
+    req.session.user.wins = updatedUser.wins;
 
     return res.json({
       ok: true,
@@ -526,12 +532,13 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
       );
     } else {
       updatedUser = await db.one(
-        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
         [user.user_id]
       );
     }
 
     req.session.user.balance = updatedUser.balance;
+    req.session.user.wins = updatedUser.wins;
 
     return res.json({
       ok: true,
@@ -604,41 +611,75 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
   if (!bet || bet <= 0) {
     return res.status(400).json({ error: 'Invalid bet amount.' });
   }
+  const user_id = req.session.user.user_id;
 
-  if (typeof req.session.user.balance !== 'number') {
-    req.session.user.balance = 1000;
+  // Refresh user balance from DB
+  try {
+    const freshUser = await db.one(
+      'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
+      [user_id]
+    );
+    req.session.user.balance = freshUser.balance;
+    if (bet > req.session.user.balance) {
+      return res.status(400).json({ error: 'Insufficient balance.' });
+    }
+
+    const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
+
+    const reels = [
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+    ];
+
+    const [a, b, c] = reels;
+    let payout = 0;
+
+    if (a === b && b === c) {
+      payout = a === '💎' ? bet * 10 : a === '🍒' ? bet * 3 : bet * 2;
+    } else if (a === b || b === c || a === c) {
+      payout = bet * 2;
+    }
+
+    const netWin = payout - bet; // how much the player actually profits
+    // Log/subtract the bet
+    await recordTransaction(
+      user_id,
+      -bet,
+      'Slots Spin',
+      `Slots spin bet ${bet}`
+    );
+
+    let updatedUser;
+    
+    // Log/add payout and increment wins
+    if (payout > 0) {
+      updatedUser = await recordTransaction(
+        user_id,
+        payout,
+        'Slots Win',
+        `Slots payout ${payout} on bet ${bet}`
+      );
+    } else {
+      //No win/payout, just get current balance
+      updatedUser = await db.one(
+        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        [user_id]
+      );
+    }
+    //Keep session user data consistent
+    req.session.user.balance = updatedUser.balance;
+    req.session.user.wins = updatedUser.wins;
+    res.json({
+      reels,
+      payout: netWin,      // return net winnings
+      newBalance: updatedUser.balance,
+    });
+
+  } catch (err) {
+    console.error('Slots spin error:', err);
+    return res.status(500).json({ error: 'Server error.' });
   }
-
-  if (bet > req.session.user.balance) {
-    return res.status(400).json({ error: 'Insufficient balance.' });
-  }
-
-  const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
-
-  const reels = [
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-    SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-  ];
-
-  const [a, b, c] = reels;
-  let payout = 0;
-
-  if (a === b && b === c) {
-    payout = a === '💎' ? bet * 10 : a === '🍒' ? bet * 3 : bet * 2;
-  } else if (a === b || b === c || a === c) {
-    payout = bet * 2;
-  }
-
-  const netWin = payout - bet; // how much the player actually profits
-  req.session.user.balance += netWin;
-
-  res.json({
-    reels,
-    payout: netWin,      // return net winnings
-    newBalance: req.session.user.balance,
-});
-
 });
 
 // MINES
@@ -781,7 +822,7 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
 });
 
 
-// WALLET (placeholder)
+// WALLET PAGE
 app.get('/wallet', requireAuth, async (req, res) => {
   const backgroundLayers = [
     'neon-clouds dim',
@@ -791,13 +832,19 @@ app.get('/wallet', requireAuth, async (req, res) => {
   ];
 
   try {
-    const row = await db.one(
-      'SELECT balance FROM users WHERE user_id = $1',
-      [req.session.user.user_id]
+    const user_id = req.session.user.user_id;
+    const result = await db.one('SELECT user_id, username, balance, wins FROM users WHERE user_id = $1',
+      [user_id]
     );
-    req.session.user.balance = Number(row.balance);
 
-    const transactions = await getUserTransactions(req.session.user.user_id);
+    //Debug: check that wins increment properly
+    console.log(`User ${result.username} has ${result.wins} wins.`);
+
+    if (result && result.balance != null) {
+      req.session.user.balance = Number(result.balance);
+    }
+
+    const transactions = await getUserTransactions(user_id);
 
     res.render('pages/wallet', {
       title: 'Betwise — Wallet',
@@ -938,10 +985,10 @@ app.get('/profile', requireAuth, async (req, res) => {
       backgroundLayers: defaultBackgroundLayers(true),
       prof,
     });
-    }
-  catch{}
+  }
+  catch { }
 
-  
+
 });
 
 // LOGOUT
@@ -951,6 +998,7 @@ function handleLogout(req, res) {
 
 app.get('/logout', handleLogout);
 app.post('/logout', handleLogout);
+
 
 // ================= TEST ROUTE (for server.spec.js) ==================
 app.get('/welcome', (req, res) => {
