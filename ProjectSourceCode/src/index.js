@@ -651,7 +651,7 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
     );
 
     let updatedUser;
-    
+
     // Log/add payout and increment wins
     if (payout > 0) {
       updatedUser = await recordTransaction(
@@ -986,9 +986,10 @@ app.get('/profile', requireAuth, async (req, res) => {
       prof,
     });
   }
-  catch { }
-
-
+  catch (error) {
+    console.error('Error loading profile page');
+    res.status(500).send('Server error');
+  }
 });
 
 // LOGOUT
