@@ -1,4 +1,7 @@
-// slots.js
+// =====================
+//  SLOTS GAME LOGIC
+// =====================
+
 document.addEventListener('DOMContentLoaded', () => {
   const spinBtn  = document.getElementById('slotSpin');
   const reelEls  = [
@@ -9,22 +12,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const betInput = document.getElementById('slotBet');
   const resultEl = document.getElementById('slotResult');
 
-  // If key elements are missing, do nothing
+  // If key elements are missing (wrong page), stop.
   if (!spinBtn || reelEls.some(r => !r) || !betInput || !resultEl) {
     return;
   }
 
-  // Helper: parse the nav balance if window.initialBalance is missing
+  // Helper: read navbar balance if needed
   function readNavBalance() {
     const navEl = document.getElementById('balance');
     if (!navEl) return 0;
-
-    const text = navEl.textContent || '';
-    const match = text.match(/([\d.]+)/);
+    const match = (navEl.textContent || '').match(/([\d.]+)/);
     return match ? Number(match[1]) : 0;
   }
 
-  // Start balance from server or from nav
+  // Starting balance: from server → fallback to navbar
   let currentBalance =
     typeof window.initialBalance === 'number'
       ? window.initialBalance
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
 
-  // Update nav header balance (the one in the navbar)
+  // Update navbar balance
   function updateHeaderBalance(newBalance) {
     const el = document.getElementById('balance');
     const n = Number(newBalance);
@@ -41,27 +42,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Reel spin animation
+  // Reel animation
   function startAnimation() {
     return reelEls.map((el, idx) => {
       return setInterval(() => {
-        const sym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-        el.textContent = sym;
+        el.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
       }, 80 + idx * 30);
     });
   }
 
-  // ---------------- SPIN BUTTON ----------------
+  // ---------- SPIN BUTTON ----------
   spinBtn.addEventListener('click', async () => {
     resultEl.textContent = '';
     const bet = Number(betInput.value);
 
-    // Validate bet first
+    // Validate bet
     if (!bet || bet <= 0) {
       resultEl.textContent = 'Enter a valid bet.';
       return;
     }
-
     if (bet > currentBalance) {
       resultEl.textContent = `You only have $${currentBalance}`;
       return;
@@ -69,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     spinBtn.disabled = true;
 
-    // Start animation and add CSS spin class
+    // Start animation
     reelEls.forEach(el => el.classList.add('spin'));
     const timers = startAnimation();
 
@@ -80,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ bet }),
       });
 
-      // Handle HTTP errors
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         resultEl.textContent = data.error || 'Server error.';
@@ -92,37 +90,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       const { reels, payout, newBalance } = data;
 
-      // Smoothly stop reels one by one
+      // Stop reels one-by-one
       for (let i = 0; i < reelEls.length; i++) {
-        await new Promise(r => setTimeout(r, 250)); // stagger stop
+        await new Promise(r => setTimeout(r, 250));
         clearInterval(timers[i]);
         reelEls[i].textContent = reels[i];
-        reelEls[i].classList.remove('spin'); // remove CSS spin class
+        reelEls[i].classList.remove('spin');
       }
 
-      // Update our local balance + nav header
+      // Update balance everywhere
       currentBalance = newBalance;
       updateHeaderBalance(newBalance);
 
-      resultEl.textContent = payout > 0
-        ? `You won $${payout}!`
-        : 'No win.';
+      const pageBalance = document.querySelector('.bj-balance');
+      if (pageBalance) {
+        pageBalance.textContent = `Balance: $${newBalance}`;
+      }
 
+      resultEl.textContent =
+        payout > 0 ? `You won $${payout}!` : 'No win.';
+      
     } catch (err) {
       console.error(err);
       resultEl.textContent = 'Network or server error.';
       timers.forEach(t => clearInterval(t));
     } finally {
       spinBtn.disabled = false;
-      // ensure all reels have spin class removed
       reelEls.forEach(el => el.classList.remove('spin'));
     }
   });
-
-
 });
 
-// Rules <details> toggle text
+// ===========================
+//  SLOT RULES TOGGLE
+// ===========================
+
 document.addEventListener('DOMContentLoaded', () => {
   const details = document.querySelector('.slot-rules');
   if (!details) return;
