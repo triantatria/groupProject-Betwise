@@ -1,69 +1,79 @@
+<div id="auth-wrapper" class="register-page fade-in">
 
-  {{#each backgroundLayers}} 
-    <div class="bg-layer {{this}}"></div> 
-  {{/each}}
 
-  <div class="fish-swarm register-fish">
-    <img src="/resources/images/pinkfish.png" class="pf pf1" />
-    <img src="/resources/images/pinkfish.png" class="pf pf2" />
-    <img src="/resources/images/pinkfish.png" class="pf pf3" />
-    <img src="/resources/images/pinkfish.png" class="pf pf4" />
-    <img src="/resources/images/pinkfish.png" class="pf pf5" />
-    <img src="/resources/images/pinkfish.png" class="pf pf6" />
-  </div>
+ {{#each backgroundLayers}}
+ <div class="bg-layer {{this}}"></div>
+ {{/each}}
 
-  <div class="auth-container">
 
-    <h1 class="auth-logo">BETWISE</h1>
-    <p class="auth-tagline">Flow With The Odds</p>
+ <!-- Pink Fish -->
+ <div class="fish-swarm register-fish">
+   <img src="/resources/images/pinkfish.png" class="pf pf1" />
+   <img src="/resources/images/pinkfish.png" class="pf pf2" />
+   <img src="/resources/images/pinkfish.png" class="pf pf3" />
+   <img src="/resources/images/pinkfish.png" class="pf pf4" />
+   <img src="/resources/images/pinkfish.png" class="pf pf5" />
+   <img src="/resources/images/pinkfish.png" class="pf pf6" />
+ </div>
 
-    <div class="auth-card">
 
-      {{#if error}}
-        <div class="auth-error">{{message}}</div>
-      {{/if}}
+ <div class="auth-container">
 
-      <form class="register-form" action="/register" method="post">
-    <div class="input-row">
-    <div class="input-group">
-      <label for="fname">First Name</label>
-      <input id="fname" name="fname" type="text" placeholder="Enter your first name" required />
-    </div>
 
-<div class="input-group">
-      <label for="lname">Last Name</label>
-      <input id="lname" name="lname" type="text" placeholder="Enter your last name" required />
-    </div>
-  </div>
-    <div class="input-row">
+   <h1 class="auth-logo">BETWISE</h1>
+   <p class="auth-tagline">Flow With The Odds</p>
 
-    <div class="input-group">
-      <label for="email">Email</label>
-      <input id="email" name="email" type="text" placeholder="Enter your email" required
-      pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$" title="Valid email" />
-    </div>
-  </div>
-  <div class="input-row">
-    <div class="input-group">
-      <label for="username">Username</label>
-      <input id="username" name="username" type="text" placeholder="Enter your username" required />
-    </div>
 
-    <div class="input-group">
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" placeholder="Enter your password" required
-      pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
-      title="At least 8 characters, with uppercase, lowercase, a number, and a symbol." />
-    </div>
-  </div>
+   <div class="auth-card">
 
-  <button type="submit" class="enter-button">Sign up</button>
-</form>
-        <a href="/login" class="auth-secondary-btn" data-fade>
-          Back to Login
-        </a>
 
-    </div>
+     {{#if error}}
+     <div class="auth-error">{{message}}</div>
+     {{/if}}
 
-  </div>
+
+     <form class="auth-form register-form" action="/register" method="post">
+
+
+       <div class="auth-input">
+         <label for="fname">First Name</label>
+         <input id="fname" name="fname" type="text" required placeholder="Enter your first name">
+       </div>
+
+
+       <div class="auth-input">
+         <label for="lname">Last Name</label>
+         <input id="lname" name="lname" type="text" required placeholder="Enter your last name">
+       </div>
+
+
+       <div class="auth-input">
+         <label for="email">Email</label>
+         <input id="email" name="email" type="email" required placeholder="Enter your email"
+           pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$">
+       </div>
+
+
+       <div class="auth-input">
+         <label for="username">Username</label>
+         <input id="username" name="username" type="text" required placeholder="Enter your username">
+       </div>
+
+
+       <div class="auth-input">
+         <label for="password">Password</label>
+         <input id="password" name="password" type="password" required placeholder="Enter your password"
+           pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}">
+       </div>
+
+
+       <button class="auth-primary-btn" type="submit">Sign Up</button>
+
+
+       <a href="/login" class="auth-secondary-btn">Back to Login</a>
+     </form>
+
+
+   </div>
+ </div>
 </div>
