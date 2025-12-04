@@ -29,7 +29,7 @@ const hbs = handlebars.create({
 hbs.handlebars.registerHelper('inc', value => Number(value) + 1);
 
 const dbConfig = {
-  host: process.env.HOST,
+  host: process.env.POSTGRES_HOST,
   port: 5432,
   database: process.env.POSTGRES_DB,
   user: process.env.POSTGRES_USER,
@@ -91,7 +91,7 @@ function friendlyType(code) {
     case 'Blackjack Win': return 'Blackjack Win';
     case 'Blackjack Loss': return 'Blackjack Loss';
     case 'Blackjack Push': return 'Blackjack Push (Tie)';
-    case 'Blackjack Double': return 'Blackjack Double Down';
+    case 'Blackjack Double': return 'Blackjack Double';
     case 'Blackjack Result': return 'Blackjack Result';
 
     case 'Mines Bet': return 'Mines Bet';
@@ -122,7 +122,7 @@ async function getUserTransactions(userId) {
   }));
 }
 
-// Expose user + balance to all templates
+// Make user + balance accessible in templates
 app.use((req, res, next) => {
   if (req.session.user) {
     const b = Number(req.session.user.balance);
@@ -339,8 +339,8 @@ app.get('/home', requireAuth, (req, res) => {
     {
       name: 'Blackjack',
       description: 'Beat the dealer.',
-      tag: 'Card Game',
       route: '/blackjack',
+      tag: 'Card Game',
       image: '/resources/images/blackjackFishImage.png',
     },
     {
@@ -700,26 +700,18 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/mines/tile-win', requireAuth, async (req, res) => {
-  const { tileReward } = req.body;
-  const amount = Number(tileReward);
-  if (!Number.isFinite(amount) || amount < 0) {
-    return res.json({ newBalance: req.session.user.balance });
-  }
+//
+// ⭐ DUMMY TILE-WIN ROUTE (Option B)
+//    - Prevents errors
+//    - Does NOT credit money
+//
 
-  const updated = await recordTransaction(
-    req.session.user.user_id,
-    amount,
-    'Mines Tile Reward',
-    `Safe tile reward ${amount}`
-  );
-
-  req.session.user.balance = updated.balance;
-  res.json({ newBalance: updated.balance });
+app.post('/mines/tile-win', requireAuth, (req, res) => {
+  return res.json({ ok: true });
 });
 
 // *****************************************************
-// LEADERBOARD — NOW SORTED BY WINS
+// LEADERBOARD — SORTED BY WINS
 // *****************************************************
 
 app.get('/leaderboard', requireAuth, async (req, res) => {
@@ -770,7 +762,6 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
   }
 });
 
-// Optional helper — tier names for badge colors
 function getStatusTier(balance) {
   if (balance >= 10000) return 'legend';
   if (balance >= 5000) return 'diamond';
