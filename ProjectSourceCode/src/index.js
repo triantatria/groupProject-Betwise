@@ -98,6 +98,7 @@ function friendlyType(code) {
     case 'Mines Win': return 'Mines Win';
     case 'Mines Loss': return 'Mines Loss';
     case 'Mines Cashout': return 'Mines Cashout';
+    case 'Mines Tile Reward': return 'Mines Safe Tile';
 
     default: return code;
   }
@@ -365,17 +366,13 @@ app.get('/home', requireAuth, (req, res) => {
 // *****************************************************
 
 async function recordTransaction(userId, deltaAmount, type, description = '') {
-  //Determine if this is a win (increment wins count)
-  const addWin = type.includes('Win') ? 1 : 0;
-
   return db.tx(async t => {
     const updated = await t.one(
       `UPDATE users
-       SET balance = balance + $1,
-       wins = wins + $2
-       WHERE user_id = $3
+       SET balance = balance + $1
+       WHERE user_id = $2
        RETURNING user_id, username, balance`,
-      [deltaAmount, addWin, userId]
+      [deltaAmount, userId]
     );
 
     await t.none(
@@ -450,7 +447,6 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
     type = 'Blackjack Win';
     desc = `Won Blackjack +${payout}`;
 
-    // 🔥 ADD WINS HERE
     await db.none(
       `UPDATE users SET wins = wins + 1 WHERE user_id=$1`,
       [req.session.user.user_id]
@@ -579,7 +575,6 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
       );
       updatedBalance = winUpdate.balance;
 
-      // 🔥 ADD WINS HERE
       await db.none(
         `UPDATE users SET wins = wins + 1 WHERE user_id=$1`,
         [userId]
@@ -705,7 +700,7 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
   }
 });
 
-app.post("/mines/tile-win", requireAuth, async (req, res) => {
+app.post('/mines/tile-win', requireAuth, async (req, res) => {
   const { tileReward } = req.body;
   const amount = Number(tileReward);
   if (!Number.isFinite(amount) || amount < 0) {
@@ -715,7 +710,7 @@ app.post("/mines/tile-win", requireAuth, async (req, res) => {
   const updated = await recordTransaction(
     req.session.user.user_id,
     amount,
-    "Mines Win",
+    'Mines Tile Reward',
     `Safe tile reward ${amount}`
   );
 
