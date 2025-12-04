@@ -29,7 +29,7 @@ const hbs = handlebars.create({
 hbs.handlebars.registerHelper('inc', value => Number(value) + 1);
 
 const dbConfig = {
-  host: "db",
+  host: process.env.HOST,
   port: 5432,
   database: process.env.POSTGRES_DB,
   user: process.env.POSTGRES_USER,
