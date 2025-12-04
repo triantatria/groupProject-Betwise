@@ -1370,31 +1370,42 @@ details[open] .rules-summary {
   text-align: center;
 }
 
+.leaderboard-area .section-title {
+  font-family: "Audiowide";
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  color: #aaf6ff;
+  text-shadow:
+    0 0 12px #00eaff,
+    0 0 22px #0099cc;
+}
+
 .leaderboard-table {
-  max-width: 900px;
+  max-width: 950px;
   margin: 2rem auto;
   padding: 1rem 0;
-  background: rgba(0, 10, 20, 0.55);
-  border: 1px solid rgba(0, 255, 255, 0.18);
-  border-radius: 20px;
-  backdrop-filter: blur(22px);
+  background: rgba(0, 12, 20, 0.55);
+  border: 1px solid rgba(0, 225, 255, 0.25);
+  border-radius: 22px;
+  backdrop-filter: blur(24px);
   box-shadow:
-    0 0 20px #00eaff22 inset,
-    0 0 40px #000a14;
+    0 0 22px #00eaff33 inset,
+    0 0 50px #000a16;
   overflow: hidden;
 }
 
+/* HEADER */
 .leaderboard-header {
   display: grid;
-  grid-template-columns: 150px 1fr 200px;
+  grid-template-columns: 150px 1fr 200px 140px;
   padding: 1rem 2rem;
   align-items: center;
   gap: 2rem;
   font-family: "Audiowide";
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: #7deaff;
-  text-shadow: 0 0 12px #00eaff66;
-  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  text-shadow: 0 0 10px #00eaff66;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .col-rank,
@@ -1403,23 +1414,25 @@ details[open] .rules-summary {
   opacity: 0.9;
 }
 
-.col-score {
+.col-score,
+.col-status {
   text-align: right;
   opacity: 0.9;
 }
 
+/* ROWS */
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 150px 1fr 200px;
+  grid-template-columns: 150px 1fr 200px 140px;
   padding: 1rem 2rem;
   align-items: center;
   gap: 2rem;
-  background: rgba(0, 15, 25, 0.45);
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(0, 18, 28, 0.38);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   transition:
-    background .25s ease,
-    box-shadow .25s ease,
-    transform .25s ease;
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
 }
 
 .leaderboard-row:last-child {
@@ -1427,36 +1440,36 @@ details[open] .rules-summary {
 }
 
 .leaderboard-row:hover {
-  background: rgba(0, 25, 40, 0.85);
+  background: rgba(0, 30, 45, 0.90);
   box-shadow:
-    0 0 16px #00eaff44 inset,
-    0 0 22px #ff30d644 inset;
-  transform: scale(1.012);
+    0 0 16px #00eaff55 inset,
+    0 0 20px #ff38d688 inset;
+  transform: scale(1.01);
   border-radius: 12px;
 }
 
+/* RANK */
 .rank-big {
   font-family: "Audiowide";
-  font-size: 1.7rem;
+  font-size: 1.8rem;
   opacity: .95;
   text-align: left;
 }
 
-.rank-1 {
+.rank-0 { /* #1 */
   color: #ffd700;
-  text-shadow: 0 0 14px #ffd70088;
+  text-shadow: 0 0 14px #ffd700aa;
 }
-
-.rank-2 {
+.rank-1 { /* #2 */
   color: #c0c0c0;
-  text-shadow: 0 0 14px #c0c0c088;
+  text-shadow: 0 0 14px #c0c0c0aa;
 }
-
-.rank-3 {
+.rank-2 { /* #3 */
   color: #cd7f32;
-  text-shadow: 0 0 14px #cd7f3288;
+  text-shadow: 0 0 14px #cd7f32aa;
 }
 
+/* USER */
 .user-cell {
   display: flex;
   align-items: center;
@@ -1466,34 +1479,43 @@ details[open] .rules-summary {
 
 .username {
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  color: #e6faff;
+  text-shadow: 0 0 8px #00aaff55;
 }
 
-.avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: rgba(255, 255, 255, .08);
-  border: 1px solid rgba(0, 255, 255, .25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.avatar-fallback {
-  font-size: 1.25rem;
-  color: #dbfaff;
-  font-family: "Audiowide";
-}
-
+/* SCORE */
 .score-cell {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
+.score-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #bdf6ff;
+  text-shadow: 0 0 6px #00d6ffaa;
+}
+
+/* SCORE BAR */
+.score-bar {
+  width: 120px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 6px #00eaff44 inset;
+}
+.score-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00eaff, #66f2ff);
+  box-shadow: 0 0 10px #00eaff;
+  transition: width 0.4s ease-out;
+}
+
+/* STATUS BADGE */
 .status-badge {
   padding: 0.45rem 0.8rem;
   border-radius: 8px;
@@ -1506,6 +1528,7 @@ details[open] .rules-summary {
   white-space: nowrap;
 }
 
+/* Tiers */
 .tier-legend {
   color: #00eaff;
   border-color: #00eaff88;
@@ -1518,17 +1541,17 @@ details[open] .rules-summary {
 
 .tier-platinum {
   color: #bfe7ff;
-  border-color: #bfe7ff66;
+  border-color: #bfe7ff88;
 }
 
 .tier-gold {
   color: #e5c55a;
-  border-color: #e5c55a66;
+  border-color: #e5c55a88;
 }
 
 .tier-silver {
-  color: #d0dde9;
-  border-color: #d0dde988;
+  color: #d5dfea;
+  border-color: #d5dfea88;
 }
 
 .tier-bronze {

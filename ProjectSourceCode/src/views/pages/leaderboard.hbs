@@ -1,5 +1,5 @@
 {{#each backgroundLayers}}
-  <div class="bg-layer {{this}}"></div>
+<div class="bg-layer {{this}}"></div>
 {{/each}}
 
 {{> nav }}
@@ -13,22 +13,22 @@
       <span class="col-rank">Rank</span>
       <span class="col-user">Player</span>
       <span class="col-score">Balance</span>
-      <span class="col-status">Wins</span>
+      <span class="col-status">Tier</span>
     </div>
 
-    {{#each hello}}
+    {{#each leaderboard}}
     <div class="leaderboard-row hover-glow">
 
-      <div class="rank-big rank-{{@index}}">
-        #{{inc @index}}
+      <div class="rank-big rank-{{rank}}">
+        #{{rank}}
       </div>
 
       <div class="user-cell">
-        <span class="username">{{this.username}}</span>
+        <span class="username">{{username}}</span>
       </div>
 
       <div class="score-cell">
-        <span class="score-text">${{this.balance}}</span>
+        <span class="score-text">${{balance}}</span>
 
         <div class="score-bar">
           <div class="score-fill" style="width: {{progress}}%;"></div>
@@ -41,5 +41,6 @@
 
     </div>
     {{/each}}
+
   </div>
 </section>

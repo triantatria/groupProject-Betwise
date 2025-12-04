@@ -680,6 +680,10 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
 // LEADERBOARD
 // *****************************************************
 
+// *****************************************************
+// LEADERBOARD — sorted by balance
+// *****************************************************
+
 app.get('/leaderboard', requireAuth, async (req, res) => {
   const backgroundLayers = [
     'neon-clouds dim',
@@ -688,46 +692,38 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
     'neon-dots',
   ];
 
-  // Temporary mock data
-  const rawLeaderboard = [
-    { rank: 1, username: 'fish', balance: 12500, status: 'Legend' },
-    { rank: 2, username: 'this fish', balance: 11340, status: 'Diamond' },
-    { rank: 3, username: 'that fish', balance: 9980, status: 'Platinum' },
-    { rank: 4, username: 'other fish', balance: 8740, status: 'Gold' },
-    { rank: 5, username: 'yay fish!', balance: 8210, status: 'Gold' },
-  ];
-
-  const maxBalance = Math.max(...rawLeaderboard.map(p => p.balance));
-
-  const leaderboard = rawLeaderboard.map(p => ({
-    ...p,
-    progress: Math.round((p.balance / maxBalance) * 100),
-  }));
-
-  const query = `SELECT * FROM users;`;
-  const query2 = `SELECT u.user_id, u.username, b.wins, b.best_score, b.updated_at
-                  FROM blackjack_leaderboard b
-                  JOIN users u ON u.user_id = b.user_id
-                  ORDER BY b.wins DESC
-                  LIMIT 10`;
-
   try {
-    const hello = await db.any(query);
-    const result2 = await db.any(query2);
+    // 1. Get all users sorted by balance (highest first)
+    const usersByBalance = await db.any(`
+      SELECT user_id, username, balance, wins
+      FROM users
+      ORDER BY balance DESC;
+    `);
+
+    // 2. Calculate ranks + progress bar %
+    const maxBalance = usersByBalance.length > 0 ? usersByBalance[0].balance : 1;
+
+    const leaderboard = usersByBalance.map((u, i) => ({
+      rank: i + 1,
+      username: u.username,
+      balance: u.balance,
+      wins: u.wins,
+      status: getStatusTier(u.balance),
+      progress: Math.round((u.balance / maxBalance) * 100)
+    }));
 
     res.render('pages/leaderboard', {
-      hello,
       leaderboard,
-      blackjackLeaders: result2,
       title: 'Betwise — Leaderboard',
       pageClass: 'leaderboard-page ultra-ink',
       backgroundLayers,
       siteName: 'BETWISE',
     });
+
   } catch (err) {
     console.error(err);
     res.render('pages/leaderboard', {
-      users: [],
+      leaderboard: [],
       error: 'Failed to load leaderboard',
       title: 'Betwise — Leaderboard',
       pageClass: 'leaderboard-page ultra-ink',
@@ -736,6 +732,16 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
     });
   }
 });
+
+// Optional helper — tier names for badge colors
+function getStatusTier(balance) {
+  if (balance >= 10000) return 'legend';
+  if (balance >= 5000) return 'diamond';
+  if (balance >= 2500) return 'platinum';
+  if (balance >= 1500) return 'gold';
+  if (balance >= 750) return 'silver';
+  return 'bronze';
+}
 
 // *****************************************************
 // WALLET
