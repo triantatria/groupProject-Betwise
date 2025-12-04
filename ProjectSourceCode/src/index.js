@@ -138,6 +138,7 @@ app.use((req, res, next) => {
   } else {
     res.locals.user = null;
     res.locals.balance = null;
+    res.locals.wins = null;
   }
   next();
 });
