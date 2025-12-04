@@ -29,7 +29,7 @@ const hbs = handlebars.create({
 hbs.handlebars.registerHelper('inc', value => Number(value) + 1);
 
 const dbConfig = {
-  host: 'db',
+  host: "db",
   port: 5432,
   database: process.env.POSTGRES_DB,
   user: process.env.POSTGRES_USER,
@@ -334,9 +334,27 @@ app.get('/about', (req, res) => {
 
 app.get('/home', requireAuth, (req, res) => {
   const games = [
-    { name: 'Slots', description: 'Spin the reels!', tag: 'Classic', route: '/slots', image: '/resources/images/slotsFishImage.png' },
-    { name: 'Blackjack', description: 'Beat the dealer.', tag: 'Card Game', route: '/blackjack', image: '/resources/images/blackjackFishImage.png' },
-    { name: 'Mines', description: 'Avoid the bombs!', tag: 'Strategy', route: '/mines', image: '/resources/images/minesFishImage.png' },
+    {
+      name: 'Slots',
+      description: 'Spin the reels!',
+      tag: 'Classic',
+      route: '/slots',
+      image: '/resources/images/slotsFishImage.png',
+    },
+    {
+      name: 'Blackjack',
+      description: 'Beat the dealer.',
+      tag: 'Card Game',
+      route: '/blackjack',
+      image: '/resources/images/blackjackFishImage.png',
+    },
+    {
+      name: 'Mines',
+      description: 'Avoid the bombs!',
+      tag: 'Strategy',
+      route: '/mines',
+      image: '/resources/images/minesFishImage.png',
+    },
   ];
 
   res.render('pages/home', {
@@ -376,9 +394,9 @@ async function recordTransaction(userId, deltaAmount, type, description = '') {
   });
 }
 
-// *****************************************************
+/*****************************************************
 // GAME ROUTES — Blackjack / Slots / Mines
-// *****************************************************
+*****************************************************/
 
 // ---------- BLACKJACK ----------
 app.get('/blackjack', requireAuth, (req, res) => {
@@ -451,15 +469,15 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
         type,
         desc
       );
-    } else {
-      updatedUser = await db.one(
-        'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
-        [user.user_id]
-      );
+
+      req.session.user.balance = updated.balance;
+      return res.json({ ok: true, newBalance: updated.balance });
     }
 
     req.session.user.balance = updatedUser.balance;
     req.session.user.wins = updatedUser.wins;
+
+    req.session.user.balance = u.balance;
 
     res.json({ ok: true, newBalance: u.balance });
   } catch (err) {
@@ -499,9 +517,6 @@ app.post('/blackjack/double', requireAuth, async (req, res) => {
 
 // ---------- SLOTS ----------
 app.get('/slots', requireAuth, (req, res) => {
-  if (typeof req.session.user.balance !== 'number')
-    req.session.user.balance = 1000;
-
   res.render('pages/slots', {
     title: 'Betwise — Slots',
     pageClass: 'slots-page ultra-ink',
@@ -510,7 +525,7 @@ app.get('/slots', requireAuth, (req, res) => {
   });
 });
 
-app.post('/slots/spin', requireAuth, (req, res) => {
+app.post('/slots/spin', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
 
   if (!bet || bet <= 0)
@@ -662,6 +677,8 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
       [req.session.user.user_id]
     );
 
+    req.session.user.balance = u.balance;
+
     res.json({ ok: true, newBalance: u.balance });
   } catch (err) {
     console.error('Mines cashout error:', err);
@@ -675,29 +692,28 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
 
 app.get('/leaderboard', requireAuth, async (req, res) => {
   const backgroundLayers = [
-    "neon-clouds dim",
-    "caustics softer",
-    "bloom-overlay subtle",
-    "neon-dots"
+    'neon-clouds dim',
+    'caustics softer',
+    'bloom-overlay subtle',
+    'neon-dots',
   ];
 
-  // Temporary mock data (replace with DB when ready)
+  // Temporary mock data
   const rawLeaderboard = [
-    { rank: 1, username: "fish", balance: 12500, status: "Legend" },
-    { rank: 2, username: "this fish", balance: 11340, status: "Diamond" },
-    { rank: 3, username: "that fish", balance: 9980, status: "Platinum" },
-    { rank: 4, username: "other fish", balance: 8740, status: "Gold" },
-    { rank: 5, username: "yay fish!", balance: 8210, status: "Gold" }
+    { rank: 1, username: 'fish', balance: 12500, status: 'Legend' },
+    { rank: 2, username: 'this fish', balance: 11340, status: 'Diamond' },
+    { rank: 3, username: 'that fish', balance: 9980, status: 'Platinum' },
+    { rank: 4, username: 'other fish', balance: 8740, status: 'Gold' },
+    { rank: 5, username: 'yay fish!', balance: 8210, status: 'Gold' },
   ];
 
-  // Highest score defines 100%
   const maxBalance = Math.max(...rawLeaderboard.map(p => p.balance));
 
-  // Calculate progress %
   const leaderboard = rawLeaderboard.map(p => ({
     ...p,
-    progress: Math.round((p.balance / maxBalance) * 100)
+    progress: Math.round((p.balance / maxBalance) * 100),
   }));
+
   const query = `SELECT * FROM users;`;
   const query2 = `SELECT u.user_id, u.username, b.wins, b.best_score, b.updated_at
                   FROM blackjack_leaderboard b
@@ -706,13 +722,13 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
                   LIMIT 10`;
 
   try {
-    const hello = await db.query(query);   // <-- FIXED
-    //const hello2 = result.rows; 
-
-    const result2 = await db.query(query2); 
+    const hello = await db.any(query);
+    const result2 = await db.any(query2);
 
     res.render('pages/leaderboard', {
       hello,
+      leaderboard,
+      blackjackLeaders: result2,
       title: 'Betwise — Leaderboard',
       pageClass: 'leaderboard-page ultra-ink',
       backgroundLayers,
@@ -720,13 +736,19 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.render('pages/leaderboard', { users: [], error: "Failed to load leaderboard" });
+    res.render('pages/leaderboard', {
+      users: [],
+      error: 'Failed to load leaderboard',
+      title: 'Betwise — Leaderboard',
+      pageClass: 'leaderboard-page ultra-ink',
+      backgroundLayers,
+      siteName: 'BETWISE',
+    });
   }
-
 });
 
 // *****************************************************
-// WALLET (Option A — correct wallet page)
+// WALLET
 // *****************************************************
 
 // WALLET PAGE
@@ -808,7 +830,9 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
 
     if (todayCount + amount > DAILY_CREDIT_LIMIT) {
       const remaining = Math.max(DAILY_CREDIT_LIMIT - todayCount, 0);
-      const transactions = await getUserTransactions(req.session.user.user_id);
+      const transactions = await getUserTransactions(
+        req.session.user.user_id
+      );
 
       return res.status(400).render('pages/wallet', {
         title: 'Betwise — Wallet',
@@ -817,9 +841,10 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
         user: req.session.user,
         balance: row.balance,
         transactions,
-        errorMessage: remaining > 0
-          ? `Daily limit reached. You can add ${remaining} more today.`
-          : `Daily limit reached. You cannot add more credits today.`,
+        errorMessage:
+          remaining > 0
+            ? `Daily limit reached. You can add ${remaining} more today.`
+            : `Daily limit reached. You cannot add more credits today.`,
         backgroundLayers,
       });
     }
@@ -846,7 +871,6 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
     });
 
     res.redirect('/wallet');
-
   } catch (err) {
     console.error('Add credits error:', err);
     res.status(500).send('Server error');
