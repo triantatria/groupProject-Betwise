@@ -22,6 +22,24 @@ function updateAllBalances(newBalance) {
     el.textContent = `Balance: $${n}`;
   });
 }
+function getCurrentBalanceFromDOM() {
+  // Try navbar first (#balance has "$123")
+  const header = document.getElementById('balance');
+  if (header) {
+    const n = Number(header.textContent.replace(/[^0-9.-]/g, ''));
+    if (Number.isFinite(n)) return n;
+  }
+
+  // Fallback: first blackjack balance element ("Balance: $123")
+  const bjBalanceEl = document.querySelector('.bj-balance');
+  if (bjBalanceEl) {
+    const n = Number(bjBalanceEl.textContent.replace(/[^0-9.-]/g, ''));
+    if (Number.isFinite(n)) return n;
+  }
+
+  return 0; // default if nothing found
+}
+
 
 // =====================
 //     BLACKJACK LOGIC
@@ -155,6 +173,11 @@ const Blackjack = (() => {
     const bet = Number(betInput.value) || 0;
     if (bet <= 0) {
       resultTextEl.textContent = 'Enter in a valid bet before you play';
+      return;
+    }
+    const currentBalance = getCurrentBalanceFromDOM();
+    if (bet > currentBalance) {
+      resultTextEl.textContent = 'Bet cannot be higher than your current balance';
       return;
     }
 
