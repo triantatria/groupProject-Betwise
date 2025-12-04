@@ -263,19 +263,21 @@ const Mines = (() => {
     tile.el.classList.add("mine-safe");
     safeRevealed++;
 
-    const difficultyMultiplier = numMines / GRID_SIZE;
-    const tileReward = Math.floor(currentBet * difficultyMultiplier * safeRevealed);
+    // const difficultyMultiplier = numMines / GRID_SIZE;
+    // const tileReward = Math.floor(currentBet * difficultyMultiplier * safeRevealed);
 
-    fetch("/mines/tile-win", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tileReward })
-    }).catch(() => {});
+    // fetch("/mines/tile-win", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ tileReward })
+    // }).catch(() => {});
 
+    // statusEl.textContent =
+    //   `Safe! +${tileReward} credits (bet ${currentBet} × ${difficultyMultiplier.toFixed(
+    //     2
     statusEl.textContent =
-      `Safe! +${tileReward} credits (bet ${currentBet} × ${difficultyMultiplier.toFixed(
-        2
-      )} × streak ${safeRevealed}).`;
+  `Safe! Current cashout: $${computePayout(false)} (streak ${safeRevealed})`;
+
 
     if (safeRevealed === totalSafeTiles) handleFullClear();
   }
