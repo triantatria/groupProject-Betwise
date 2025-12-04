@@ -4,7 +4,7 @@
 ### Features
 - **Three Polished Games:** Enjoy Blackjack, Mines, and Slots. Created for quick sessions, responsive design, and engaging gameplay.
 - **Credit-Based System:** BetWise uses in-game credits, ensuring an entertaining and risk-free experience.
-- **Responsive Design:** Built to look and feel great across desktop and mobile with smooth animations and instant feedback.
+- **Responsive Design:** Built to look and feel great across desktop with smooth animations and instant feedback.
 - **Beginner Friendly:** Designed for users who want to learn the games responsibly and without financial risk.
   
 ### Overview
@@ -13,11 +13,10 @@ Players create an account and receive a virtual wallet with credits to play imme
 ### Target Audience
 - Beginner gamblers wanting to learn how casino games work.
 - Users looking for a fun, stress-free way to play.
-- Individuals who want the thrill without financial loss or debt.
+- Individuals who want the same thrill without financial loss or debt.
 
 ### Installation and Setup
-- Must have Docker installed to run this application
-- (insert instructions on how to run BetWise locally once we have this)
+- All you need is our rendered link: https://groupproject-betwise-zh96.onrender.com/
 
 ### Future Improvements
 - Add multiplayer modes.
@@ -26,10 +25,10 @@ Players create an account and receive a virtual wallet with credits to play imme
 - Increase scalablity so games can also be played on mobile devices.
 
 ### Tech Stack
-- Frontend: 
+- Frontend: JS, HTML, CSS, HBS
 - Backend: Node.js, Express
 - Database: PostgreSQL
-- Authentification:
+- Authentification: express-session
 - Styling: CSS
 - Containerization: Docker and Docker Compose
   
