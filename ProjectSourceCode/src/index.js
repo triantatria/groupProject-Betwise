@@ -700,12 +700,6 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
   }
 });
 
-//
-// ⭐ DUMMY TILE-WIN ROUTE (Option B)
-//    - Prevents errors
-//    - Does NOT credit money
-//
-
 app.post('/mines/tile-win', requireAuth, (req, res) => {
   return res.json({ ok: true });
 });

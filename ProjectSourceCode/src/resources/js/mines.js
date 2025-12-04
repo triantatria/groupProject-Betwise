@@ -2,9 +2,9 @@ let currentBet = 0;
 let safeRevealed = 0;
 let totalSafeTiles = 0;
 
-// ========================================
-// Balance UI Helpers
-// ========================================
+/* ========================================
+   Balance UI Helpers
+======================================== */
 function updateHeaderBalance(newBalance) {
   const balanceEl = document.getElementById("balance");
   const n = Number(newBalance);
@@ -18,9 +18,9 @@ function updatePageBalance(newBalance) {
   if (minesBalance) minesBalance.textContent = `Balance: $${newBalance}`;
 }
 
-// ========================================
-// MINES MODULE
-// ========================================
+/* ========================================
+   MINES MODULE
+======================================== */
 const Mines = (() => {
   const GRID_SIZE = 25;
 
@@ -29,7 +29,6 @@ const Mines = (() => {
   let numMines = 5;
   let roundActive = false;
 
-  // UI elements
   let statusEl;
   let betInputEl;
   let mineCountInputEl;
@@ -55,9 +54,9 @@ const Mines = (() => {
     statusEl.textContent = 'Enter a bet and click "Start Game" to play.';
   }
 
-  // ========================================
-  // Start Game
-  // ========================================
+  /* ========================================
+     Start Game
+  ======================================== */
   async function handleStartClick() {
     const bet = Number(betInputEl.value || 0);
     if (!bet || bet <= 0) {
@@ -66,11 +65,7 @@ const Mines = (() => {
     }
 
     let requestedMines = Number.parseInt(mineCountInputEl.value, 10);
-    if (
-      Number.isNaN(requestedMines) ||
-      requestedMines < 1 ||
-      requestedMines > GRID_SIZE - 1
-    ) {
+    if (Number.isNaN(requestedMines) || requestedMines < 1 || requestedMines > GRID_SIZE - 1) {
       statusEl.textContent = `Enter mines between 1 and ${GRID_SIZE - 1}.`;
       return;
     }
@@ -92,7 +87,6 @@ const Mines = (() => {
 
       currentBet = bet;
 
-      // Start bet DOES update the balance
       updateHeaderBalance(data.newBalance);
       updatePageBalance(data.newBalance);
 
@@ -105,13 +99,14 @@ const Mines = (() => {
     }
   }
 
-  // ========================================
-  // Cashout
-  // ========================================
+  /* ========================================
+     Cashout (partial)
+  ======================================== */
   async function handleCashoutClick() {
     if (!roundActive) return;
 
-    const payout = computePayout(false);
+    const gross = computePayout(false);
+    const payout = Math.max(0, gross - currentBet);
 
     try {
       const res = await fetch("/mines/cashout", {
@@ -131,14 +126,12 @@ const Mines = (() => {
 
       if (payout > 0) {
         statusEl.textContent =
-          `Cashed out! You earned ${payout} credits.\n` +
-          `Clear the whole board next time to earn a WIN.`;
+          `Cashed out! You earned ${payout} credits.\nClear the whole board next time to earn a WIN.`;
       } else {
         statusEl.textContent =
           `Cashed out with no payout.\nClear the entire board to receive a win!`;
       }
 
-      // Cashout DOES update the balance
       updateHeaderBalance(data.newBalance);
       updatePageBalance(data.newBalance);
 
@@ -149,13 +142,14 @@ const Mines = (() => {
     }
   }
 
-  // ========================================
-  // Full Clear (WIN)
-  // ========================================
+  /* ========================================
+     Full Clear (WIN)
+  ======================================== */
   async function handleFullClear() {
     if (!roundActive) return;
 
-    const payout = computePayout(true);
+    const gross = computePayout(true);
+    const payout = Math.max(0, gross - currentBet);
 
     try {
       const res = await fetch("/mines/cashout", {
@@ -174,11 +168,11 @@ const Mines = (() => {
       revealAllMines();
 
       const multiplier = GRID_SIZE / (GRID_SIZE - numMines);
+
       statusEl.textContent =
         `Board cleared! You earned ${payout} credits and +1 WIN!\n` +
-        `Multiplier applied: bet ${currentBet} × ${multiplier.toFixed(2)}^${GRID_SIZE - numMines}.`;
+        `Multiplier: bet ${currentBet} × ${multiplier.toFixed(2)}^${GRID_SIZE - numMines}`;
 
-      // WIN updates balance
       updateHeaderBalance(data.newBalance);
       updatePageBalance(data.newBalance);
 
@@ -189,9 +183,9 @@ const Mines = (() => {
     }
   }
 
-  // ========================================
-  // Grid / Round Setup
-  // ========================================
+  /* ========================================
+     Grid / Round Setup
+  ======================================== */
   function buildGrid() {
     gridEl.innerHTML = "";
     tiles = [];
@@ -199,8 +193,10 @@ const Mines = (() => {
     for (let i = 0; i < GRID_SIZE; i++) {
       const el = document.createElement("div");
       el.classList.add("mine-tile");
+
       const tile = { el, index: i, isMine: false, revealed: false };
       el.addEventListener("click", () => handleTileClick(tile));
+
       tiles.push(tile);
       gridEl.appendChild(el);
     }
@@ -233,18 +229,16 @@ const Mines = (() => {
     }
   }
 
-  // ========================================
-  // Tile Click
-  // ========================================
+  /* ========================================
+     Tile Click
+  ======================================== */
   function handleTileClick(tile) {
     if (!roundActive || tile.revealed) return;
 
     tile.revealed = true;
 
-    // ---- Mine Hit ----
     if (tile.isMine) {
       tile.el.classList.add("mine-bomb", "mine-hit");
-
       statusEl.textContent = "Boom! You hit a mine.";
 
       fetch("/mines/cashout", {
@@ -266,15 +260,12 @@ const Mines = (() => {
       return;
     }
 
-    // ---- Safe Tile ----
     tile.el.classList.add("mine-safe");
     safeRevealed++;
 
     const difficultyMultiplier = numMines / GRID_SIZE;
-    const tileReward =
-      Math.floor(currentBet * difficultyMultiplier * safeRevealed);
+    const tileReward = Math.floor(currentBet * difficultyMultiplier * safeRevealed);
 
-    // We DO NOT update the balance during tile clicks anymore
     fetch("/mines/tile-win", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -289,14 +280,12 @@ const Mines = (() => {
     if (safeRevealed === totalSafeTiles) handleFullClear();
   }
 
-  // ========================================
-  // Helpers
-  // ========================================
+  /* ========================================
+     Helpers
+  ======================================== */
   function computePayout(fullClear = false) {
     if (!currentBet) return 0;
-    const safeTilesRevealed = fullClear
-      ? GRID_SIZE - numMines
-      : safeRevealed;
+    const safeTilesRevealed = fullClear ? GRID_SIZE - numMines : safeRevealed;
     const r = GRID_SIZE / (GRID_SIZE - numMines);
     return Math.floor(currentBet * r ** safeTilesRevealed);
   }
