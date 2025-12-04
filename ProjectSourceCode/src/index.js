@@ -366,13 +366,17 @@ app.get('/home', requireAuth, (req, res) => {
 // *****************************************************
 
 async function recordTransaction(userId, deltaAmount, type, description = '') {
+  //Determine if this is a win (increment wins count)
+  const addWin = type.includes('Win') ? 1 : 0;
+
   return db.tx(async t => {
     const updated = await t.one(
       `UPDATE users
-       SET balance = balance + $1
-       WHERE user_id = $2
-       RETURNING user_id, balance`,
-      [deltaAmount, userId]
+       SET balance = balance + $1,
+       wins = wins + $2
+       WHERE user_id = $3
+       RETURNING user_id, username, balance`,
+      [deltaAmount, addWin, userId]
     );
 
     await t.none(
