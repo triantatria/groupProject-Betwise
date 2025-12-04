@@ -17,18 +17,12 @@
 
     <div class="wallet-actions">
       <form action="/wallet/add-credits" method="POST" class="wallet-form">
-        <div class="wallet-input-row">
+        <div class="wallet-input-row centered">
           <input id="amount" name="amount" type="number" min="1" max="1000" required placeholder="1 - 1000"
             class="wallet-input">
 
-          <!-- submits the form -->
           <button class="wallet-btn" id="depositBtn" type="submit">
             Deposit
-          </button>
-
-          <!-- placeholder-->
-          <button class="wallet-btn secondary" id="withdrawBtn" type="button">
-            Withdraw
           </button>
         </div>
 

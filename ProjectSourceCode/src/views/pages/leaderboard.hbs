@@ -13,30 +13,30 @@
       <span class="col-rank">Rank</span>
       <span class="col-user">Player</span>
       <span class="col-score">Balance</span>
-      <span class="col-status">Tier</span>
+      <span class="col-wins">Wins</span>
     </div>
 
     {{#each leaderboard}}
     <div class="leaderboard-row hover-glow">
 
+      <!-- Rank -->
       <div class="rank-big rank-{{rank}}">
         #{{rank}}
       </div>
 
+      <!-- Username -->
       <div class="user-cell">
         <span class="username">{{username}}</span>
       </div>
 
+      <!-- Balance -->
       <div class="score-cell">
         <span class="score-text">${{balance}}</span>
-
-        <div class="score-bar">
-          <div class="score-fill" style="width: {{progress}}%;"></div>
-        </div>
       </div>
 
-      <div class="status-badge tier-{{status}}">
-        {{status}}
+      <!-- Wins (styled like rank, aligned right) -->
+      <div class="wins-big">
+        {{wins}}
       </div>
 
     </div>

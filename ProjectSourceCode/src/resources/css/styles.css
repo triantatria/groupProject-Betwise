@@ -1515,48 +1515,22 @@ details[open] .rules-summary {
   transition: width 0.4s ease-out;
 }
 
-/* STATUS BADGE */
-.status-badge {
-  padding: 0.45rem 0.8rem;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: 600;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  border: 1px solid;
-  font-size: 0.85rem;
-  white-space: nowrap;
+.col-wins {
+  text-align: right;
+  padding-right: 1rem;
 }
 
-/* Tiers */
-.tier-legend {
-  color: #00eaff;
-  border-color: #00eaff88;
-}
-
-.tier-diamond {
-  color: #6ee8ff;
-  border-color: #6ee8ff88;
-}
-
-.tier-platinum {
-  color: #bfe7ff;
-  border-color: #bfe7ff88;
-}
-
-.tier-gold {
-  color: #e5c55a;
-  border-color: #e5c55a88;
-}
-
-.tier-silver {
-  color: #d5dfea;
-  border-color: #d5dfea88;
-}
-
-.tier-bronze {
-  color: #d49a6a;
-  border-color: #d49a6a88;
+.wins-big {
+  font-size: 1.8rem;
+  font-family: "Audiowide";
+  font-weight: 700;
+  color: #e9faff;
+  text-shadow: 0 0 12px #00eaff88;
+  padding-right: 1rem;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* WALLET PAGE */
@@ -1669,6 +1643,21 @@ details[open] .rules-summary {
 .transactions-table tr:hover {
   background: rgba(255, 255, 255, .04);
   backdrop-filter: blur(10px);
+}
+
+.wallet-input-row.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.wallet-input-row.centered .wallet-input {
+  flex: 0 0 200px;
+}
+
+.wallet-input-row.centered .wallet-btn {
+  flex: 0 0 auto; 
 }
 
 /* WALLET NAV DROPDOWN */
@@ -1820,7 +1809,7 @@ details[open] .rules-summary {
 }
 
 .photo-jackie {
-  background-image: url('/resources/images/placeholder5.png');
+  background-image: url('/resources/images/jackiePic.png');
 }
 
 .about-text {

@@ -1,48 +1,28 @@
-// =====================
-//      MINES GAME
-// =====================
-
 let currentBet = 0;
 let safeRevealed = 0;
 let totalSafeTiles = 0;
 
 function updateHeaderBalance(newBalance) {
-  const balanceEl = document.getElementById('balance');
+  const balanceEl = document.getElementById("balance");
   const n = Number(newBalance);
-  if (balanceEl && Number.isFinite(n)) {
-    balanceEl.textContent = `$${n}`;
-  }
+  if (balanceEl && Number.isFinite(n)) balanceEl.textContent = `$${n}`;
 }
 
 function updatePageBalance(newBalance) {
-  // Slots + Blackjack
-  const slotBalance = document.querySelector('.bj-balance');
-  if (slotBalance) {
-    slotBalance.textContent = `Balance: $${newBalance}`;
-  }
-
-  // Mines balance
-  const minesBalance = document.querySelector('.mines-balance');
-  if (minesBalance) {
-    minesBalance.textContent = `Balance: $${newBalance}`;
-  }
+  const slotBalance = document.querySelector(".bj-balance");
+  if (slotBalance) slotBalance.textContent = `Balance: $${newBalance}`;
+  const minesBalance = document.querySelector(".mines-balance");
+  if (minesBalance) minesBalance.textContent = `Balance: $${newBalance}`;
 }
 
-
-// =====================
-//  MINES MODULE
-// =====================
-
 const Mines = (() => {
-  const GRID_SIZE = 25;      // 5x5 grid
-  const DEFAULT_MINES = 5;
+  const GRID_SIZE = 25;
 
   let gridEl;
   let tiles = [];
-  let numMines = DEFAULT_MINES;
+  let numMines = 5;
   let roundActive = false;
 
-  // UI elements
   let statusEl;
   let betInputEl;
   let mineCountInputEl;
@@ -51,7 +31,7 @@ const Mines = (() => {
 
   function init() {
     gridEl = document.getElementById("minesGrid");
-    if (!gridEl) return; // not the Mines page
+    if (!gridEl) return;
 
     statusEl = document.getElementById("minesStatus");
     betInputEl = document.getElementById("minesBetInput");
@@ -61,45 +41,47 @@ const Mines = (() => {
 
     buildGrid();
 
-    startBtnEl?.addEventListener("click", handleStartClick);
-    cashoutBtnEl?.addEventListener("click", handleCashoutClick);
+    startBtnEl.addEventListener("click", handleStartClick);
+    cashoutBtnEl.addEventListener("click", handleCashoutClick);
 
     roundActive = false;
     statusEl.textContent = 'Enter a bet and click "Start Game" to play.';
   }
 
-  // -------------------------
-  //       START GAME
-  // -------------------------
-
   async function handleStartClick() {
-    const bet = Number(betInputEl?.value || 0);
+    const bet = Number(betInputEl.value || 0);
     if (!bet || bet <= 0) {
       statusEl.textContent = "Enter a valid bet amount to start.";
       return;
     }
 
-    const requestedMines = Number(mineCountInputEl?.value || DEFAULT_MINES);
-    numMines = (!Number.isNaN(requestedMines) && requestedMines >= 1 && requestedMines < GRID_SIZE)
-      ? requestedMines
-      : DEFAULT_MINES;
+    let requestedMines = Number.parseInt(mineCountInputEl.value, 10);
+    if (
+      Number.isNaN(requestedMines) ||
+      requestedMines < 1 ||
+      requestedMines > GRID_SIZE - 1
+    ) {
+      statusEl.textContent = `Enter a number of mines between 1 and ${GRID_SIZE - 1}.`;
+      return;
+    }
+
+    numMines = requestedMines;
 
     try {
-      const res = await fetch('/mines/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bet }),
+      const res = await fetch("/mines/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bet })
       });
 
       const data = await res.json();
       if (!res.ok || data.error) {
-        statusEl.textContent = data.error || 'Error starting game.';
+        statusEl.textContent = data.error || "Error starting game.";
         return;
       }
 
       currentBet = bet;
 
-      // 🔥 update balances everywhere
       updateHeaderBalance(data.newBalance);
       updatePageBalance(data.newBalance);
 
@@ -107,30 +89,18 @@ const Mines = (() => {
 
       startBtnEl.classList.add("hidden");
       cashoutBtnEl.classList.remove("hidden");
-
-    } catch (err) {
-      console.error('Mines start error:', err);
-      statusEl.textContent = 'Network error starting game.';
+    } catch {
+      statusEl.textContent = "Network error starting game.";
     }
   }
 
-  // -------------------------
-  //       CASHOUT
-  // -------------------------
-
   function computePayout(fullClear = false) {
     if (!currentBet) return 0;
-
-    const safeTilesRevealed = fullClear
-      ? (GRID_SIZE - numMines)   // all safe tiles
-      : safeRevealed;
-
+    const safeTilesRevealed = fullClear ? GRID_SIZE - numMines : safeRevealed;
     const r = GRID_SIZE / (GRID_SIZE - numMines);
     const multiplier = r ** safeTilesRevealed;
-
     return Math.floor(currentBet * multiplier);
   }
-
 
   async function handleCashoutClick() {
     if (!roundActive) return;
@@ -138,40 +108,38 @@ const Mines = (() => {
     const payout = computePayout(false);
 
     try {
-      const res = await fetch('/mines/cashout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payout, resultType: 'cashout' }),
+      const res = await fetch("/mines/cashout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payout, resultType: "cashout" })
       });
 
       const data = await res.json();
       if (!res.ok || data.error) {
-        statusEl.textContent = data.error || 'Error cashing out.';
+        statusEl.textContent = data.error || "Error cashing out.";
         return;
       }
 
       endRound();
       revealAllMines();
 
-      statusEl.textContent =
-        payout > 0 ? `You won ${payout} credits!` : 'You cashed out with no payout.';
+      if (payout > 0) {
+        statusEl.textContent =
+          `Cashed out! You earned ${payout} credits.\nClear the entire board next time to earn a win.`;
+      } else {
+        statusEl.textContent =
+          `Cashed out with no payout.\nClear the entire board to receive a win!`;
+      }
 
-      // 🔥 update balances everywhere
       updateHeaderBalance(data.newBalance);
       updatePageBalance(data.newBalance);
 
       cashoutBtnEl.classList.add("hidden");
       startBtnEl.classList.remove("hidden");
-
-    } catch (err) {
-      console.error('Mines cashout error:', err);
-      statusEl.textContent = 'Network error cashing out.';
+    } catch {
+      statusEl.textContent = "Network error cashing out.";
     }
   }
-
-  // -------------------------
-  //       FULL CLEAR
-  // -------------------------
 
   async function handleFullClear() {
     if (!roundActive) return;
@@ -179,52 +147,44 @@ const Mines = (() => {
     const payout = computePayout(true);
 
     try {
-      const res = await fetch('/mines/cashout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payout, resultType: 'win' }),
+      const res = await fetch("/mines/cashout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payout, resultType: "win" })
       });
 
       const data = await res.json();
       if (!res.ok || data.error) {
-        statusEl.textContent = data.error || 'Error cashing out.';
+        statusEl.textContent = data.error || "Error cashing out.";
         return;
       }
 
       endRound();
       revealAllMines();
 
-      statusEl.textContent = `Board cleared! You win ${payout} credits!`;
+      const multiplier = GRID_SIZE / (GRID_SIZE - numMines);
+      statusEl.textContent =
+        `Board cleared! You earned ${payout} credits and +1 WIN!\n` +
+        `Multiplier applied: bet ${currentBet} × ${multiplier.toFixed(2)}^${GRID_SIZE - numMines}.`;
 
-      // 🔥 update balances everywhere
       updateHeaderBalance(data.newBalance);
       updatePageBalance(data.newBalance);
 
       cashoutBtnEl.classList.add("hidden");
       startBtnEl.classList.remove("hidden");
-
-    } catch (err) {
-      console.error('Mines full clear error:', err);
-      statusEl.textContent = 'Network error cashing out.';
+    } catch {
+      statusEl.textContent = "Network error cashing out.";
     }
   }
-
-  // -------------------------
-  //        GRID SETUP
-  // -------------------------
 
   function buildGrid() {
     gridEl.innerHTML = "";
     tiles = [];
-
     for (let i = 0; i < GRID_SIZE; i++) {
       const el = document.createElement("div");
       el.classList.add("mine-tile");
-
       const tile = { el, index: i, isMine: false, revealed: false };
-
       el.addEventListener("click", () => handleTileClick(tile));
-
       tiles.push(tile);
       gridEl.appendChild(el);
     }
@@ -232,7 +192,6 @@ const Mines = (() => {
 
   function newRound() {
     roundActive = true;
-
     tiles.forEach(tile => {
       tile.isMine = false;
       tile.revealed = false;
@@ -243,7 +202,7 @@ const Mines = (() => {
     safeRevealed = 0;
     totalSafeTiles = GRID_SIZE - numMines;
 
-    statusEl.textContent = `New round! Avoid the ${numMines} mines.`;
+    statusEl.textContent = `New round! ${numMines} mines on the board.`;
 
     placeMines();
   }
@@ -257,32 +216,26 @@ const Mines = (() => {
     }
   }
 
-  // -------------------------
-  //       TILE CLICK
-  // -------------------------
-
   function handleTileClick(tile) {
     if (!roundActive || tile.revealed) return;
 
     tile.revealed = true;
 
     if (tile.isMine) {
-      // LOSS
       tile.el.classList.add("mine-bomb", "mine-hit");
 
       statusEl.textContent = "Boom! You hit a mine.";
 
-      fetch('/mines/cashout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payout: 0, resultType: 'loss' }),
+      fetch("/mines/cashout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payout: 0, resultType: "loss" })
       })
         .then(res => res.json())
         .then(data => {
           updateHeaderBalance(data.newBalance);
           updatePageBalance(data.newBalance);
-        })
-        .catch(err => console.error('Mines loss error:', err));
+        });
 
       revealAllMines();
       endRound();
@@ -292,15 +245,30 @@ const Mines = (() => {
       return;
     }
 
-    // SAFE TILE
     tile.el.classList.add("mine-safe");
+
     safeRevealed++;
 
-    if (safeRevealed === totalSafeTiles) {
-      handleFullClear();
-    } else {
-      statusEl.textContent = "Safe! Keep going or cash out.";
-    }
+    const difficultyMultiplier = numMines / GRID_SIZE;
+    const tileReward = Math.floor(
+      currentBet * difficultyMultiplier * safeRevealed
+    );
+
+    fetch("/mines/tile-win", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tileReward })
+    })
+      .then(res => res.json())
+      .then(data => {
+        updateHeaderBalance(data.newBalance);
+        updatePageBalance(data.newBalance);
+      });
+
+    statusEl.textContent =
+      `Safe! +${tileReward} credits (bet ${currentBet} × ${difficultyMultiplier.toFixed(2)} × streak ${safeRevealed}).`;
+
+    if (safeRevealed === totalSafeTiles) handleFullClear();
   }
 
   function revealAllMines() {
@@ -317,5 +285,4 @@ const Mines = (() => {
   return { init };
 })();
 
-// Initialize Mines game
 document.addEventListener("DOMContentLoaded", Mines.init);

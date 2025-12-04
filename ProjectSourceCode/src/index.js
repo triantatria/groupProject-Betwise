@@ -86,7 +86,6 @@ function friendlyType(code) {
 
     case 'Slots Spin': return 'Slots Spin';
     case 'Slots Win': return 'Slots Win';
-    case 'slots': return 'Slots Spin';
 
     case 'Blackjack Bet': return 'Blackjack Bet';
     case 'Blackjack Win': return 'Blackjack Win';
@@ -450,6 +449,13 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
   } else if (result === 'win') {
     type = 'Blackjack Win';
     desc = `Won Blackjack +${payout}`;
+
+    // 🔥 ADD WINS HERE
+    await db.none(
+      `UPDATE users SET wins = wins + 1 WHERE user_id=$1`,
+      [req.session.user.user_id]
+    );
+
   } else if (result === 'push') {
     type = 'Blackjack Push';
     desc = `Push, returned ${payout}`;
@@ -538,7 +544,6 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
     if (bet > user.balance)
       return res.status(400).json({ error: 'Insufficient balance.' });
 
-    // Deduct bet
     const afterBet = await recordTransaction(
       userId,
       -bet,
@@ -573,6 +578,12 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
         `Slots payout ${payoutTotal}`
       );
       updatedBalance = winUpdate.balance;
+
+      // 🔥 ADD WINS HERE
+      await db.none(
+        `UPDATE users SET wins = wins + 1 WHERE user_id=$1`,
+        [userId]
+      );
     }
 
     const net = payoutTotal - bet;
@@ -641,6 +652,7 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
 
   let type = 'Mines Cashout';
   let desc = `Cashout +${amount}`;
+  let incrementWin = false;
 
   if (resultType === 'loss' || amount === 0) {
     type = 'Mines Loss';
@@ -648,40 +660,71 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
   } else if (resultType === 'win') {
     type = 'Mines Win';
     desc = `Full clear +${amount}`;
+    incrementWin = true;
   }
 
   try {
-    if (amount > 0) {
-      const updated = await recordTransaction(
-        req.session.user.user_id,
-        amount,
-        type,
-        desc
-      );
-      req.session.user.balance = updated.balance;
-      return res.json({ ok: true, newBalance: updated.balance });
-    }
+    const userId = req.session.user.user_id;
 
-    const u = await db.one(
-      `SELECT balance FROM users WHERE user_id=$1`,
-      [req.session.user.user_id]
-    );
+    const updated = await db.tx(async t => {
+      if (amount > 0) {
+        await t.none(
+          `INSERT INTO transactions (user_id, type, amount, description)
+           VALUES ($1, $2, $3, $4)`,
+          [userId, type, amount, desc]
+        );
 
-    req.session.user.balance = u.balance;
+        await t.none(
+          `UPDATE users SET balance = balance + $1 WHERE user_id = $2`,
+          [amount, userId]
+        );
+      } else {
+        await t.none(
+          `INSERT INTO transactions (user_id, type, amount, description)
+           VALUES ($1, $2, 0, $3)`,
+          [userId, type, desc]
+        );
+      }
 
-    res.json({ ok: true, newBalance: u.balance });
+      if (incrementWin) {
+        await t.none(
+          `UPDATE users SET wins = wins + 1 WHERE user_id=$1`,
+          [userId]
+        );
+      }
+
+      return t.one(`SELECT balance FROM users WHERE user_id=$1`, [userId]);
+    });
+
+    req.session.user.balance = updated.balance;
+
+    return res.json({ ok: true, newBalance: updated.balance });
   } catch (err) {
     console.error('Mines cashout error:', err);
-    res.status(500).json({ error: 'Server error.' });
+    return res.status(500).json({ error: 'Server error.' });
   }
 });
 
-// *****************************************************
-// LEADERBOARD
-// *****************************************************
+app.post("/mines/tile-win", requireAuth, async (req, res) => {
+  const { tileReward } = req.body;
+  const amount = Number(tileReward);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return res.json({ newBalance: req.session.user.balance });
+  }
+
+  const updated = await recordTransaction(
+    req.session.user.user_id,
+    amount,
+    "Mines Win",
+    `Safe tile reward ${amount}`
+  );
+
+  req.session.user.balance = updated.balance;
+  res.json({ newBalance: updated.balance });
+});
 
 // *****************************************************
-// LEADERBOARD — sorted by balance
+// LEADERBOARD — NOW SORTED BY WINS
 // *****************************************************
 
 app.get('/leaderboard', requireAuth, async (req, res) => {
@@ -693,23 +736,21 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
   ];
 
   try {
-    // 1. Get all users sorted by balance (highest first)
-    const usersByBalance = await db.any(`
+    const usersByWins = await db.any(`
       SELECT user_id, username, balance, wins
       FROM users
-      ORDER BY balance DESC;
+      ORDER BY wins DESC, balance DESC;
     `);
 
-    // 2. Calculate ranks + progress bar %
-    const maxBalance = usersByBalance.length > 0 ? usersByBalance[0].balance : 1;
+    const maxWins = usersByWins.length > 0 ? usersByWins[0].wins : 1;
 
-    const leaderboard = usersByBalance.map((u, i) => ({
+    const leaderboard = usersByWins.map((u, i) => ({
       rank: i + 1,
       username: u.username,
       balance: u.balance,
       wins: u.wins,
       status: getStatusTier(u.balance),
-      progress: Math.round((u.balance / maxBalance) * 100)
+      progress: Math.round((u.wins / maxWins) * 100)
     }));
 
     res.render('pages/leaderboard', {
@@ -722,6 +763,7 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
 
   } catch (err) {
     console.error(err);
+
     res.render('pages/leaderboard', {
       leaderboard: [],
       error: 'Failed to load leaderboard',
