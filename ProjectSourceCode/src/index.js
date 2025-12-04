@@ -236,8 +236,16 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   let { fname, lname, email, username, password } = req.body;
+  
+  const wantsJson =
+    req.is('application/json') ||
+    (req.get('Accept') || '').includes('application/json');
 
   if (typeof username !== 'string' || typeof password !== 'string') {
+    if (wantsJson) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
     return res.status(400).render('pages/register', {
       error: true,
       message: 'Invalid input.',
@@ -250,6 +258,10 @@ app.post('/register', async (req, res) => {
   const cleanPassword = password.trim();
 
   if (!cleanUsername || !cleanPassword) {
+    if (wantsJson) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
     return res.status(400).render('pages/register', {
       error: true,
       message: 'All fields required.',
@@ -265,6 +277,10 @@ app.post('/register', async (req, res) => {
     );
 
     if (exists) {
+      if (wantsJson) {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+
       return res.render('pages/register', {
         error: true,
         message: 'Username already taken.',
@@ -282,12 +298,22 @@ app.post('/register', async (req, res) => {
       [fname, lname, email, cleanUsername, hashed]
     );
 
+    if (wantsJson) {
+      // Positive test case
+      return res.status(200).json({ message: 'Success' });
+    }
+
     return renderLoginPage(res, {
       success: true,
       message: 'Account created. Please log in.',
     });
   } catch (err) {
     console.error('Registration error:', err);
+
+    if (wantsJson) {
+      return res.status(500).json({ message: 'Something went wrong' });
+    }
+
     return res.render('pages/register', {
       error: true,
       message: 'Something went wrong.',
@@ -296,6 +322,7 @@ app.post('/register', async (req, res) => {
     });
   }
 });
+
 
 // TRANSITION SCREEN
 app.get('/transition', requireAuth, (req, res) => {

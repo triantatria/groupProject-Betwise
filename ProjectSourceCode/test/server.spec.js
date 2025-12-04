@@ -32,7 +32,7 @@ describe('POST /register - positive', () => {
     chai
       .request(server)
       .post('/register')
-      .send({ username: 'test_user', password: 'password123' })
+      .send({ fname: 'John', lname: 'Doe', email: 'jode123@gmail.com', username: 'test_user', password: 'Password$123' })
       .end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body.message).to.equal('Success');
