@@ -122,7 +122,7 @@ async function getUserTransactions(userId) {
   }));
 }
 
-// Make user + balance accessible in templates
+// Make user and balance accessible in templates
 app.use((req, res, next) => {
   if (req.session.user) {
     const b = Number(req.session.user.balance);
@@ -386,10 +386,10 @@ async function recordTransaction(userId, deltaAmount, type, description = '') {
 }
 
 /*****************************************************
-// GAME ROUTES — Blackjack / Slots / Mines
+// GAME ROUTES — Blackjack, Slots, Mines
 *****************************************************/
 
-// ---------- BLACKJACK ----------
+// BLACKJACK
 app.get('/blackjack', requireAuth, (req, res) => {
   res.render('pages/blackjack', {
     title: 'Betwise — Blackjack',
@@ -513,7 +513,7 @@ app.post('/blackjack/double', requireAuth, async (req, res) => {
   }
 });
 
-// ---------- SLOTS ----------
+// SLOTS 
 app.get('/slots', requireAuth, (req, res) => {
   res.render('pages/slots', {
     title: 'Betwise — Slots',
@@ -598,7 +598,7 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
   }
 });
 
-// ---------- MINES ----------
+// MINES
 app.get('/mines', requireAuth, (req, res) => {
   res.render('pages/mines', {
     title: 'Betwise — Mines',
@@ -704,10 +704,7 @@ app.post('/mines/tile-win', requireAuth, (req, res) => {
   return res.json({ ok: true });
 });
 
-// *****************************************************
-// LEADERBOARD — SORTED BY WINS
-// *****************************************************
-
+// LEADERBOARD 
 app.get('/leaderboard', requireAuth, async (req, res) => {
   const backgroundLayers = [
     'neon-clouds dim',
@@ -765,10 +762,7 @@ function getStatusTier(balance) {
   return 'bronze';
 }
 
-// *****************************************************
 // WALLET
-// *****************************************************
-
 app.get('/wallet', requireAuth, async (req, res) => {
   try {
     const transactions = await getUserTransactions(req.session.user.user_id);
@@ -882,10 +876,8 @@ app.post('/wallet/add-credits', requireAuth, async (req, res) => {
   }
 });
 
-// *****************************************************
-// PROFILE
-// *****************************************************
 
+// PROFILE
 app.get('/profile', requireAuth, async (req, res) => {
   try {
     const prof = await db.one(
@@ -906,10 +898,8 @@ app.get('/profile', requireAuth, async (req, res) => {
   }
 });
 
-// *****************************************************
-// LOGOUT
-// *****************************************************
 
+// LOGOUT
 function handleLogout(req, res) {
   req.session.destroy(() => res.redirect('/'));
 }

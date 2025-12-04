@@ -1,7 +1,4 @@
-// =====================
 //  SLOTS GAME LOGIC
-// =====================
-
 document.addEventListener('DOMContentLoaded', () => {
   const spinBtn  = document.getElementById('slotSpin');
   const reelEls  = [
@@ -12,12 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const betInput = document.getElementById('slotBet');
   const resultEl = document.getElementById('slotResult');
 
-  // If key elements are missing (wrong page), stop.
+  // If key elements are missing, then stop
   if (!spinBtn || reelEls.some(r => !r) || !betInput || !resultEl) {
     return;
   }
 
-  // Helper: read navbar balance if needed
+  // read navbar balance if needed
   function readNavBalance() {
     const navEl = document.getElementById('balance');
     if (!navEl) return 0;
@@ -25,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return match ? Number(match[1]) : 0;
   }
 
-  // Starting balance: from server → fallback to navbar
+  // Get starting balance from server (fallback to navbar if fails)
   let currentBalance =
     typeof window.initialBalance === 'number'
       ? window.initialBalance
@@ -51,12 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ---------- SPIN BUTTON ----------
+  // Spin button
   spinBtn.addEventListener('click', async () => {
     resultEl.textContent = '';
     const bet = Number(betInput.value);
 
-    // Validate bet
+    // Make sure bet is valid
     if (!bet || bet <= 0) {
       resultEl.textContent = 'Enter a valid bet.';
       return;
@@ -90,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       const { reels, payout, newBalance } = data;
 
-      // Stop reels one-by-one
+      // Stop reels one-by-one instead of all together
       for (let i = 0; i < reelEls.length; i++) {
         await new Promise(r => setTimeout(r, 250));
         clearInterval(timers[i]);
@@ -98,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reelEls[i].classList.remove('spin');
       }
 
-      // Update balance everywhere
+      // Update balances
       currentBalance = newBalance;
       updateHeaderBalance(newBalance);
 
@@ -121,10 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ===========================
-//  SLOT RULES TOGGLE
-// ===========================
-
+// slot rules dropdown
 document.addEventListener('DOMContentLoaded', () => {
   const details = document.querySelector('.slot-rules');
   if (!details) return;
