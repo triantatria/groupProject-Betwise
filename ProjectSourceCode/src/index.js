@@ -201,7 +201,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await db.oneOrNone(
-      'SELECT user_id, username, password_hash, balance FROM users WHERE username = $1',
+      'SELECT user_id, username, password_hash, balance, wins FROM users WHERE username = $1',
       [username]
     );
 
@@ -624,7 +624,7 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
     } else {
       //No win/payout, just get current balance
       updatedUser = await db.one(
-        'SELECT user_id, balance FROM users WHERE user_id = $1',
+        'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
         [user_id]
       );
     }
@@ -710,7 +710,8 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
         desc
       );
       req.session.user.balance = updated.balance;
-      return res.json({ ok: true, newBalance: updated.balance });
+      req.session.user.wins = updated.wins;
+      return res.json({ ok: true, newBalance: updated.balance, wins: updated.wins });
     }
 
     const u = await db.one(
@@ -803,8 +804,13 @@ app.get('/wallet', requireAuth, async (req, res) => {
     //Debug: check that wins increment properly
     console.log(`User ${result.username} has ${result.wins} wins.`);
 
-    if (result && result.balance != null) {
-      req.session.user.balance = Number(result.balance);
+    if (result) {
+      if (result.balance != null) {
+        req.session.user.balance = Number(result.balance);
+      }
+      if (result.wins != null) {
+        req.session.user.wins = Number(result.wins);
+      }
     }
 
     const transactions = await getUserTransactions(user_id);
