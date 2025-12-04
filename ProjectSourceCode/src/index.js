@@ -134,6 +134,7 @@ app.use((req, res, next) => {
 
     res.locals.user = req.session.user;
     res.locals.balance = req.session.user.balance;
+    res.locals.wins = req.session.user.wins;
   } else {
     res.locals.user = null;
     res.locals.balance = null;
@@ -242,7 +243,17 @@ app.get('/register', (req, res) => {
 app.post('/register', async (req, res) => {
   let { fname, lname, email, username, password } = req.body;
 
+  // detect if this is a JSON / test request
+  const wantsJson =
+    req.is('application/json') ||
+    (req.get('Accept') || '').includes('application/json');
+
   if (typeof username !== 'string' || typeof password !== 'string') {
+    if (wantsJson) {
+      // what the negative test expects
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
     return res.status(400).render('pages/register', {
       error: true,
       message: 'Invalid input.',
@@ -255,6 +266,11 @@ app.post('/register', async (req, res) => {
   const cleanPassword = password.trim();
 
   if (!cleanUsername || !cleanPassword) {
+    if (wantsJson) {
+      // also treat this as invalid input for the test
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
     return res.status(400).render('pages/register', {
       error: true,
       message: 'All fields required.',
@@ -270,6 +286,10 @@ app.post('/register', async (req, res) => {
     );
 
     if (exists) {
+      if (wantsJson) {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+
       return res.render('pages/register', {
         error: true,
         message: 'Username already taken.',
@@ -287,12 +307,22 @@ app.post('/register', async (req, res) => {
       [fname, lname, email, cleanUsername, hashed]
     );
 
+    if (wantsJson) {
+      // Positive test case
+      return res.status(200).json({ message: 'Success' });
+    }
+
     return renderLoginPage(res, {
       success: true,
       message: 'Account created. Please log in.',
     });
   } catch (err) {
     console.error('Registration error:', err);
+
+    if (wantsJson) {
+      return res.status(500).json({ message: 'Something went wrong' });
+    }
+
     return res.render('pages/register', {
       error: true,
       message: 'Something went wrong.',
@@ -301,6 +331,7 @@ app.post('/register', async (req, res) => {
     });
   }
 });
+
 
 // TRANSITION SCREEN
 app.get('/transition', requireAuth, (req, res) => {
@@ -380,7 +411,7 @@ async function recordTransaction(userId, deltaAmount, type, description = '') {
        SET balance = balance + $1,
        wins = wins + $2
        WHERE user_id = $3
-       RETURNING user_id, username, balance`,
+       RETURNING user_id, username, balance, wins`,
       [deltaAmount, addWin, userId]
     );
 
@@ -410,7 +441,7 @@ app.get('/blackjack', requireAuth, (req, res) => {
 
 app.post('/blackjack/start', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
-
+  const user = req.session.user;
   if (!bet || bet <= 0)
     return res.status(400).json({ error: 'Invalid bet amount.' });
 
@@ -420,10 +451,10 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
       [user.user_id]
     );
 
-    if (bet > user.balance)
+    if (bet > freshUser.balance)
       return res.status(400).json({ error: 'Insufficient balance.' });
 
-    const updated = await recordTransaction(
+    const updatedUser = await recordTransaction(
       req.session.user.user_id,
       -bet,
       'Blackjack Bet',
@@ -433,7 +464,7 @@ app.post('/blackjack/start', requireAuth, async (req, res) => {
     req.session.user.balance = updatedUser.balance;
     req.session.user.wins = updatedUser.wins;
 
-    res.json({ ok: true, newBalance: updated.balance });
+    res.json({ ok: true, newBalance: updatedUser.balance });
   } catch (err) {
     console.error('BJ start error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -462,29 +493,38 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
   }
 
   try {
+    let updated;
+
     if (payout > 0) {
-      const updated = await recordTransaction(
+      // Apply payout, increment wins if type contains 'Win'
+      updated = await recordTransaction(
         req.session.user.user_id,
         payout,
         type,
         desc
       );
-
-      req.session.user.balance = updated.balance;
-      return res.json({ ok: true, newBalance: updated.balance });
+    } else {
+      // Just refresh the user from DB if nothing to pay
+      updated = await db.one(
+        'SELECT user_id, username, balance, wins FROM users WHERE user_id = $1',
+        [req.session.user.user_id]
+      );
     }
 
-    req.session.user.balance = updatedUser.balance;
-    req.session.user.wins = updatedUser.wins;
+    req.session.user.balance = updated.balance;
+    req.session.user.wins = updated.wins;
 
-    req.session.user.balance = u.balance;
-
-    res.json({ ok: true, newBalance: u.balance });
+    return res.json({
+      ok: true,
+      newBalance: updated.balance,
+      wins: updated.wins,
+    });
   } catch (err) {
-    console.error('BJ settle error:', err);
-    res.status(500).json({ error: 'Server error.' });
+    console.error('Blackjack settle error:', err);
+    return res.status(500).json({ error: 'Server error.' });
   }
 });
+
 
 app.post('/blackjack/double', requireAuth, async (req, res) => {
   const extraBet = Number(req.body.extraBet);
@@ -528,7 +568,7 @@ app.get('/slots', requireAuth, (req, res) => {
 app.post('/slots/spin', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
 
-  if (!bet || bet <= 0)
+  if (!bet || bet <= 0) {
     return res.status(400).json({ error: 'Invalid bet amount.' });
   }
   const user_id = req.session.user.user_id;

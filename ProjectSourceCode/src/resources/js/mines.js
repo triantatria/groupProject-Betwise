@@ -120,7 +120,6 @@ const Mines = (() => {
 
   function computePayout(fullClear = false) {
     if (!currentBet) return 0;
-
     const safeTilesRevealed = fullClear
       ? (GRID_SIZE - numMines)   // all safe tiles
       : safeRevealed;
@@ -130,7 +129,6 @@ const Mines = (() => {
 
     return Math.floor(currentBet * multiplier);
   }
-
 
   async function handleCashoutClick() {
     if (!roundActive) return;
