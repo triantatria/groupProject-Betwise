@@ -197,7 +197,7 @@ const Blackjack = (() => {
       }
 
       currentBet = bet;
-      updateAllBalances(data.newBalance);  // 🔥 update header + page
+      updateAllBalances(data.newBalance);
 
     } catch (err) {
       console.error('Blackjack start error:', err);
@@ -300,7 +300,7 @@ const Blackjack = (() => {
         return;
       }
 
-      updateAllBalances(data.newBalance);  // 🔥 sync all balances
+      updateAllBalances(data.newBalance);
 
     } catch (err) {
       console.error('Blackjack settle error:', err);
@@ -337,7 +337,7 @@ const Blackjack = (() => {
 
       currentBet += extraBet;
       betInput.value = currentBet;
-      updateAllBalances(data.newBalance);  // 🔥 sync balances
+      updateAllBalances(data.newBalance);
 
     } catch (err) {
       console.error('Blackjack double fetch error:', err);
