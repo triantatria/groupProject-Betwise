@@ -57,6 +57,23 @@ const Blackjack = (() => {
 
   let currentBet = 0;
 
+  function updateHeaderBalance(newBalance) {
+    const el = document.getElementById('balance');
+    const n = Number(newBalance);
+    //Update header balance if valid
+    if (el && Number.isFinite(n)) {
+      el.textContent = `$${n}`;
+    }
+
+    //Update blackjack page balance if valid
+    const bjEl = document.getElementById('bjBalanceValue');
+    if (bjEl && Number.isFinite(n)) {
+      bjEl.textContent = `${n}`;
+    }
+
+  }
+
+
   let deck = [];
   let playerHand = [];
   let dealerHand = [];

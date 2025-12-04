@@ -82,12 +82,15 @@ function requireAuth(req, res, next) {
 
 function friendlyType(code) {
   switch (code) {
+    // Wallet
     case 'wallet_add': return 'Add Credits';
 
+    // Slots
     case 'Slots Spin': return 'Slots Spin';
     case 'Slots Win': return 'Slots Win';
-    case 'slots': return 'Slots Spin';
+    case 'slots': return 'Slots Spin';    // legacy code type
 
+    // Blackjack
     case 'Blackjack Bet': return 'Blackjack Bet';
     case 'Blackjack Win': return 'Blackjack Win';
     case 'Blackjack Loss': return 'Blackjack Loss';
@@ -95,6 +98,7 @@ function friendlyType(code) {
     case 'Blackjack Double': return 'Blackjack Double Down';
     case 'Blackjack Result': return 'Blackjack Result';
 
+    // Mines
     case 'Mines Bet': return 'Mines Bet';
     case 'Mines Win': return 'Mines Win';
     case 'Mines Loss': return 'Mines Loss';
@@ -130,9 +134,11 @@ app.use((req, res, next) => {
 
     res.locals.user = req.session.user;
     res.locals.balance = req.session.user.balance;
+    res.locals.wins = req.session.user.wins;
   } else {
     res.locals.user = null;
     res.locals.balance = null;
+    res.locals.wins = null;
   }
   next();
 });
@@ -195,7 +201,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await db.oneOrNone(
-      'SELECT user_id, username, password_hash, balance FROM users WHERE username = $1',
+      'SELECT user_id, username, password_hash, balance, wins FROM users WHERE username = $1',
       [username]
     );
 
@@ -210,6 +216,7 @@ app.post('/login', async (req, res) => {
       user_id: user.user_id,
       username: user.username,
       balance: user.balance || 0,
+      wins: user.wins || 0
     };
 
     return res.redirect('/transition');
@@ -237,7 +244,17 @@ app.get('/register', (req, res) => {
 app.post('/register', async (req, res) => {
   let { fname, lname, email, username, password } = req.body;
 
+  // detect if this is a JSON / test request
+  const wantsJson =
+    req.is('application/json') ||
+    (req.get('Accept') || '').includes('application/json');
+
   if (typeof username !== 'string' || typeof password !== 'string') {
+    if (wantsJson) {
+      // what the negative test expects
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
     return res.status(400).render('pages/register', {
       error: true,
       message: 'Invalid input.',
@@ -250,6 +267,11 @@ app.post('/register', async (req, res) => {
   const cleanPassword = password.trim();
 
   if (!cleanUsername || !cleanPassword) {
+    if (wantsJson) {
+      // also treat this as invalid input for the test
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
     return res.status(400).render('pages/register', {
       error: true,
       message: 'All fields required.',
@@ -265,6 +287,10 @@ app.post('/register', async (req, res) => {
     );
 
     if (exists) {
+      if (wantsJson) {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+
       return res.render('pages/register', {
         error: true,
         message: 'Username already taken.',
@@ -282,12 +308,22 @@ app.post('/register', async (req, res) => {
       [fname, lname, email, cleanUsername, hashed]
     );
 
+    if (wantsJson) {
+      // Positive test case
+      return res.status(200).json({ message: 'Success' });
+    }
+
     return renderLoginPage(res, {
       success: true,
       message: 'Account created. Please log in.',
     });
   } catch (err) {
     console.error('Registration error:', err);
+
+    if (wantsJson) {
+      return res.status(500).json({ message: 'Something went wrong' });
+    }
+
     return res.render('pages/register', {
       error: true,
       message: 'Something went wrong.',
@@ -296,6 +332,7 @@ app.post('/register', async (req, res) => {
     });
   }
 });
+
 
 // TRANSITION SCREEN
 app.get('/transition', requireAuth, (req, res) => {
@@ -375,7 +412,7 @@ async function recordTransaction(userId, deltaAmount, type, description = '') {
        SET balance = balance + $1,
        wins = wins + $2
        WHERE user_id = $3
-       RETURNING user_id, username, balance`,
+       RETURNING user_id, username, balance, wins`,
       [deltaAmount, addWin, userId]
     );
 
@@ -405,29 +442,30 @@ app.get('/blackjack', requireAuth, (req, res) => {
 
 app.post('/blackjack/start', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
-
+  const user = req.session.user;
   if (!bet || bet <= 0)
     return res.status(400).json({ error: 'Invalid bet amount.' });
 
   try {
-    const user = await db.one(
-      `SELECT balance FROM users WHERE user_id=$1`,
-      [req.session.user.user_id]
+    const freshUser = await db.one(
+      'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
+      [user.user_id]
     );
 
-    if (bet > user.balance)
+    if (bet > freshUser.balance)
       return res.status(400).json({ error: 'Insufficient balance.' });
 
-    const updated = await recordTransaction(
+    const updatedUser = await recordTransaction(
       req.session.user.user_id,
       -bet,
       'Blackjack Bet',
       `Started Blackjack bet of ${bet}`
     );
 
-    req.session.user.balance = updated.balance;
+    req.session.user.balance = updatedUser.balance;
+    req.session.user.wins = updatedUser.wins;
 
-    res.json({ ok: true, newBalance: updated.balance });
+    res.json({ ok: true, newBalance: updatedUser.balance });
   } catch (err) {
     console.error('BJ start error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -456,31 +494,38 @@ app.post('/blackjack/settle', requireAuth, async (req, res) => {
   }
 
   try {
+    let updated;
+
     if (payout > 0) {
-      const updated = await recordTransaction(
+      // Apply payout, increment wins if type contains 'Win'
+      updated = await recordTransaction(
         req.session.user.user_id,
         payout,
         type,
         desc
       );
-
-      req.session.user.balance = updated.balance;
-      return res.json({ ok: true, newBalance: updated.balance });
+    } else {
+      // Just refresh the user from DB if nothing to pay
+      updated = await db.one(
+        'SELECT user_id, username, balance, wins FROM users WHERE user_id = $1',
+        [req.session.user.user_id]
+      );
     }
 
-    const u = await db.one(
-      `SELECT balance FROM users WHERE user_id=$1`,
-      [req.session.user.user_id]
-    );
+    req.session.user.balance = updated.balance;
+    req.session.user.wins = updated.wins;
 
-    req.session.user.balance = u.balance;
-
-    res.json({ ok: true, newBalance: u.balance });
+    return res.json({
+      ok: true,
+      newBalance: updated.balance,
+      wins: updated.wins,
+    });
   } catch (err) {
-    console.error('BJ settle error:', err);
-    res.status(500).json({ error: 'Server error.' });
+    console.error('Blackjack settle error:', err);
+    return res.status(500).json({ error: 'Server error.' });
   }
 });
+
 
 app.post('/blackjack/double', requireAuth, async (req, res) => {
   const extraBet = Number(req.body.extraBet);
@@ -524,27 +569,21 @@ app.get('/slots', requireAuth, (req, res) => {
 app.post('/slots/spin', requireAuth, async (req, res) => {
   const bet = Number(req.body.bet);
 
-  if (!bet || bet <= 0)
+  if (!bet || bet <= 0) {
     return res.status(400).json({ error: 'Invalid bet amount.' });
+  }
+  const user_id = req.session.user.user_id;
 
-  const userId = req.session.user.user_id;
-
+  // Refresh user balance from DB
   try {
-    const user = await db.one(
-      `SELECT balance FROM users WHERE user_id = $1`,
-      [userId]
+    const freshUser = await db.one(
+      'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
+      [user_id]
     );
-
-    if (bet > user.balance)
+    req.session.user.balance = freshUser.balance;
+    if (bet > req.session.user.balance) {
       return res.status(400).json({ error: 'Insufficient balance.' });
-
-    // Deduct bet
-    const afterBet = await recordTransaction(
-      userId,
-      -bet,
-      'Slots Spin',
-      `Slots bet ${bet}`
-    );
+    }
 
     const SYMBOLS = ['🍒', '🔔', '🍋', '⭐', '7️⃣', '💎'];
 
@@ -554,45 +593,57 @@ app.post('/slots/spin', requireAuth, async (req, res) => {
       SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
     ];
 
-    let payoutTotal = 0;
     const [a, b, c] = reels;
+    let payout = 0;
 
     if (a === b && b === c) {
-      payoutTotal = a === '💎' ? bet * 10 : a === '🍒' ? bet * 3 : bet * 2;
+      payout = a === '💎' ? bet * 10 : a === '🍒' ? bet * 3 : bet * 2;
     } else if (a === b || b === c || a === c) {
-      payoutTotal = bet * 2;
+      payout = bet * 2;
     }
 
-    let updatedBalance = afterBet.balance;
+    const netWin = payout - bet; // how much the player actually profits
+    // Log/subtract the bet
+    await recordTransaction(
+      user_id,
+      -bet,
+      'Slots Spin',
+      `Slots spin bet ${bet}`
+    );
 
-    if (payoutTotal > 0) {
-      const winUpdate = await recordTransaction(
-        userId,
-        payoutTotal,
+    let updatedUser;
+
+    // Log/add payout and increment wins
+    if (payout > 0) {
+      updatedUser = await recordTransaction(
+        user_id,
+        payout,
         'Slots Win',
-        `Slots payout ${payoutTotal}`
+        `Slots payout ${payout} on bet ${bet}`
       );
-      updatedBalance = winUpdate.balance;
+    } else {
+      //No win/payout, just get current balance
+      updatedUser = await db.one(
+        'SELECT user_id, balance, wins FROM users WHERE user_id = $1',
+        [user_id]
+      );
     }
-
-    const net = payoutTotal - bet;
-
-    req.session.user.balance = updatedBalance;
-
+    //Keep session user data consistent
+    req.session.user.balance = updatedUser.balance;
+    req.session.user.wins = updatedUser.wins;
     res.json({
-      ok: true,
       reels,
-      payout: net,
-      totalPayout: payoutTotal,
-      newBalance: updatedBalance,
+      payout: netWin,      // return net winnings
+      newBalance: updatedUser.balance,
     });
+
   } catch (err) {
     console.error('Slots spin error:', err);
-    res.status(500).json({ error: 'Server error.' });
+    return res.status(500).json({ error: 'Server error.' });
   }
 });
 
-// ---------- MINES ----------
+// MINES
 app.get('/mines', requireAuth, (req, res) => {
   res.render('pages/mines', {
     title: 'Betwise — Mines',
@@ -659,7 +710,8 @@ app.post('/mines/cashout', requireAuth, async (req, res) => {
         desc
       );
       req.session.user.balance = updated.balance;
-      return res.json({ ok: true, newBalance: updated.balance });
+      req.session.user.wins = updated.wins;
+      return res.json({ ok: true, newBalance: updated.balance, wins: updated.wins });
     }
 
     const u = await db.one(
@@ -741,9 +793,27 @@ app.get('/leaderboard', requireAuth, async (req, res) => {
 // WALLET
 // *****************************************************
 
+// WALLET PAGE
 app.get('/wallet', requireAuth, async (req, res) => {
   try {
-    const transactions = await getUserTransactions(req.session.user.user_id);
+    const user_id = req.session.user.user_id;
+    const result = await db.one('SELECT user_id, username, balance, wins FROM users WHERE user_id = $1',
+      [user_id]
+    );
+
+    //Debug: check that wins increment properly
+    console.log(`User ${result.username} has ${result.wins} wins.`);
+
+    if (result) {
+      if (result.balance != null) {
+        req.session.user.balance = Number(result.balance);
+      }
+      if (result.wins != null) {
+        req.session.user.wins = Number(result.wins);
+      }
+    }
+
+    const transactions = await getUserTransactions(user_id);
 
     res.render('pages/wallet', {
       title: 'Betwise — Wallet',
