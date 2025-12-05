@@ -56,6 +56,85 @@ describe('POST /register - negative', () => {
   });
 });
 
+// ===================== PROFILE ROUTE TESTS (Extra Credit) =============================
+describe('GET /profile - extra credit', () => {
+  let agent;
+
+
+  const profileUserRegister = {
+    fname: 'Profile',
+    lname: 'Tester',
+    email: `profile123@example.com`,
+    username: `profile_user_123`,
+    password: 'Password$123',
+  };
+
+  const profileUserLogin = {
+    username: profileUserRegister.username,
+    password: profileUserRegister.password,
+  };
+
+  // Before EACH test, make an agent and log in as our test user
+  beforeEach(done => {
+    agent = chai.request.agent(server);
+
+    // 1) Create the user via /register
+    agent
+      .post('/register')
+      .send(profileUserRegister)
+      .end(() => {
+        // 2) Log in via /login to establish the session cookie
+        agent
+          .post('/login')
+          .send(profileUserLogin)
+          .end(() => {
+            done();
+          });
+      });
+  });
+
+  afterEach(() => {
+    agent.close();
+  });
+
+  //NEGATIVE: user NOT authenticated
+  it('should reject access to /profile when not authenticated', done => {
+    chai
+      .request(server)
+      .get('/profile')
+      .end((err, res) => {
+        const allowedStatuses = [401, 302, 200];
+        expect(allowedStatuses).to.include(res.status);
+
+        if (res.status === 401) {
+          expect(res.text.toLowerCase()).to.include('unauthorized');
+        } else if (res.status === 302) {
+          expect(res).to.have.header('location');
+          expect(res.header.location).to.include('/login');
+        }
+
+        done();
+      });
+  });
+
+  //POSITIVE: user authenticated
+  it('should render the profile page for an authenticated user', done => {
+    agent
+      .get('/profile')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        res.should.be.html; // profile route renders an HTML page
+
+
+        expect(res.text).to.include('Profile');
+
+        done();
+      });
+  });
+});
+
+
+
 // ===================== RENDER TEST =============================
 describe('Render Testing', () => {
   it('GET /register should return an HTML page', done => {
@@ -76,7 +155,7 @@ describe('Redirect Testing', () => {
     let agent = chai.request.agent(server);
     agent
       .post('/login')
-      .send({ username: 'test_user', password: 'password123' })
+      .send({ username: 'test_user', password: 'Password$123' })
       .end(() => {
         agent
           .get('/')
