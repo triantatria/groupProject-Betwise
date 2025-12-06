@@ -39,7 +39,7 @@
   * Refined error/success states for wallet and games so users understand what just happened (and why).
 
 * **About Page**
-  * New **About** page listing all group members and their roles in the project.
+  * New **About** page listing all group members apart of the project.
   * Serves as a central place for instructors/users to see the team behind the app.
 
 ---
